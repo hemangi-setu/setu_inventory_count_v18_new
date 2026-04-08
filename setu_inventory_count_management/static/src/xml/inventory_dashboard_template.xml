@@ -1,0 +1,817 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="SetuInventoryDashboard" owl="1">
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"/>
+
+        <style>
+            /* Reset container styles for Odoo */
+            .dashboard-container {
+                padding: 20px;
+                background: #f8f9fa;
+                min-height: auto !important;
+                height: auto !important;
+                overflow: visible !important;
+                box-sizing: border-box;
+                font-family: 'Segoe UI', system-ui, sans-serif;
+                position: relative;
+            }
+
+            /* Force the main content area to allow scrolling */
+            .o_content {
+                overflow-y: auto !important;
+                height: 100vh !important;
+            }
+
+            /* Ensure the action manager doesn't restrict height */
+            .o_action_manager {
+                overflow-y: auto !important;
+            }
+
+            /* Specific fix for Odoo's content wrapper */
+            .o_controller_with_scroll {
+                overflow-y: auto !important;
+            }
+
+            .filter-bar {
+                display: flex;
+                align-items: center;
+                gap: 25px;
+                margin-bottom: 25px;
+                padding: 5px;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+                flex-wrap: wrap;
+                border: 1px solid #e0e6ed;
+                justify-content: space-between;
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                background: white;
+            }
+
+            .filter-group {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                background: #f8fafc;
+                padding: 10px 15px;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+                transition: all 0.3s ease;
+                margin: 5px;
+            }
+
+            .filter-group:hover {
+                background: #f1f5f9;
+                border-color: #cbd5e1;
+            }
+
+            .filter-group i {
+                color: #64748b;
+                font-size: 14px;
+                width: 16px;
+            }
+
+            .filter-group label {
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: #475569;
+                white-space: nowrap;
+                margin: 0;
+            }
+
+            .filter-input,
+            .filter-select {
+                padding: 8px 12px;
+                border: 1px solid #cbd5e1;
+                border-radius: 6px;
+                background: white;
+                font-size: 0.85rem;
+                color: #334155;
+                min-width: 140px;
+                transition: all 0.3s ease;
+            }
+
+            .filter-input:focus,
+            .filter-select:focus {
+                outline: none;
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+
+            /* Date input styling */
+            .filter-group .date-input {
+                cursor: pointer;
+            }
+
+            .filter-group .date-input::-webkit-calendar-picker-indicator {
+                cursor: pointer;
+                opacity: 0.7;
+                filter: invert(0.5);
+            }
+
+            .filter-group .date-input::-webkit-calendar-picker-indicator:hover {
+                opacity: 1;
+            }
+
+            /* Fix for dropdown options visibility */
+            .filter-select option {
+                background: white !important;
+                color: #334155 !important;
+                padding: 8px 12px !important;
+            }
+
+            .filter-select:focus option {
+                background: white !important;
+                color: #334155 !important;
+            }
+
+            /* Ensure dropdown list has proper styling */
+            .filter-select {
+                appearance: menulist !important;
+                -webkit-appearance: menulist !important;
+                -moz-appearance: menulist !important;
+            }
+
+            /* KPI Cards */
+            .kpi-section {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                gap: 15px;
+                margin-bottom: 30px;
+            }
+
+            .kpi-card {
+                background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+                border-radius: 16px;
+                padding: 25px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+                border: 1px solid rgba(255,255,255,0.8);
+                display: flex;
+                align-items: center;
+                gap: 18px;
+                transition: all 0.3s ease;
+                position: relative;
+                overflow: hidden;
+                cursor: pointer;
+            }
+
+            .kpi-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 4px;
+                background: linear-gradient(90deg, var(--card-color), transparent);
+            }
+
+            .kpi-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            }
+
+            .kpi-icon {
+                font-size: 20px;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 12px;
+                background: var(--card-bg);
+                color: var(--card-color);
+                box-shadow: 0 4px 12px var(--card-shadow);
+            }
+
+            .kpi-content {
+                flex: 1;
+            }
+
+            .kpi-value {
+                font-size: 20px;
+                font-weight: 800;
+                color: #1e293b;
+                margin-bottom: 5px;
+                line-height: 1.1;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+
+            .kpi-label {
+                font-size: 15px;
+                color: #64748b;
+                font-weight: 600;
+                margin-bottom: 8px;
+                letter-spacing: 0.5px;
+            }
+
+            /* KPI Color Variants */
+            .kpi-1 { --card-color: #3498db; --card-bg: #dbeafe; --card-shadow: rgba(59, 130, 246, 0.3); }
+            .kpi-2 { --card-color: #2ecc71; --card-bg: #dcfce7; --card-shadow: rgba(34, 197, 94, 0.3); }
+            .kpi-3 { --card-color: #e74c3c; --card-bg: #fee2e2; --card-shadow: rgba(239, 68, 68, 0.3); }
+            .kpi-4 { --card-color: #f39c12; --card-bg: #fef3c7; --card-shadow: rgba(245, 158, 11, 0.3); }
+            .kpi-5 { --card-color: #9b59b6; --card-bg: #f3e8ff; --card-shadow: rgba(168, 85, 247, 0.3); }
+            .kpi-6 { --card-color: #1abc9c; --card-bg: #ccfbf1; --card-shadow: rgba(20, 184, 166, 0.3); }
+            .kpi-7 { --card-color: #34495e; --card-bg: #f1f5f9; --card-shadow: rgba(100, 116, 139, 0.3); }
+
+            /* Charts Section */
+            .charts-section {
+                display: grid;
+                gap: 20px;
+                grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+                margin-bottom: 30px;
+            }
+
+            .section-title {
+                font-size: 1.4rem;
+                font-weight: 700;
+                color: #2c3e50;
+                margin-bottom: 20px;
+                padding-bottom: 10px;
+                border-bottom: 3px solid #3498db;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .section-title i {
+                color: #3498db;
+            }
+
+            .charts-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+                gap: 20px;
+                margin-bottom: 30px;
+                flex: 1;
+                min-width: 300px;
+            }
+
+            .chart-card {
+                background: #ffffff;
+                border-radius: 14px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+                border: 1px solid #e5e7eb;
+                padding: 20px;
+            }
+
+            .chart-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            }
+
+            .chart-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 15px;
+            }
+
+            .chart-title {
+                font-size: 1.1rem;
+                font-weight: 600;
+                color: #2c3e50;
+                margin: 0;
+            }
+
+            .chart-container {
+                position: relative;
+                height: auto;
+                aspect-ratio: 16 / 9;
+                width: 100%;
+            }
+
+            /* Allow special cards to take more width */
+            .chart-card.wide {
+                grid-column: span 2;
+            }
+
+            /* Tables Section */
+            .tables-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+                gap: 20px;
+                margin-bottom: 30px;
+            }
+
+            .table-card {
+                background: #ffffff;
+                border-radius: 14px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+                border: 1px solid #e5e7eb;
+                padding: 20px;
+            }
+
+            .table-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            }
+
+            .table-card-header {
+                background: linear-gradient(135deg, #3498db, #2980b9);
+                color: white;
+                padding: 15px 20px;
+                border-bottom: 1px solid #e0e0e0;
+            }
+
+            .table-card-title {
+                font-size: 1.1rem;
+                font-weight: 600;
+                margin: 0;
+                color: white;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .table-card-body {
+                color: #2c3e50;
+                text-align: center;
+                font-weight: 400;
+                padding: 0;
+                max-height: 60vh;
+                overflow-y: auto;
+                flex: 1;
+                height: auto;
+                overflow-x: auto;
+                scrollbar-width: thin;
+                scrollbar-color: #c1c1c1 #f1f1f1;
+            }
+
+            .table-card.wide {
+                grid-column: span 2;
+            }
+
+            .data-table {
+                width: 100%;
+                border-collapse: collapse;
+                table-layout: fixed;
+                min-width: 900px;
+                background: white;
+
+            }
+
+            .data-table th {
+                background: #f8f9fa;
+                padding: 8px 12px;
+                text-align: center;
+                font-weight: 600;
+                color: #2c3e50;
+                border-bottom: 2px solid #e9ecef;
+                font-size: 0.9rem;
+                position: sticky;
+                top: 0;
+                z-index: 10;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                min-width: 120px;
+            }
+
+            .data-table td {
+                padding: 8px 12px;
+                text-align: center;
+                font-weight: 300;
+                border-bottom: 1px solid #e9ecef;
+                color: #2c3e50;
+                font-size: 0.85rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                min-width: 120px;
+            }
+
+            .data-table tr:hover {
+                background-color: #f8f9fa;
+            }
+
+            /* Custom scrollbar styles */
+            .table-card-body::-webkit-scrollbar {
+                width: 8px;
+                height: 8px;
+            }
+
+            .table-card-body::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 10px;
+            }
+
+            .table-card-body::-webkit-scrollbar-thumb {
+                background: #c1c1c1;
+                border-radius: 10px;
+            }
+
+            .table-card-body::-webkit-scrollbar-thumb:hover {
+                background: #a8a8a8;
+            }
+
+            .status-badge {
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                text-transform: uppercase;
+            }
+
+            .status-open {
+                background: #d4edda;
+                color: #155724;
+            }
+
+            .status-pending {
+                background: #fff3cd;
+                color: #856404;
+            }
+
+            .status-high {
+                background: #f8d7da;
+                color: #721c24;
+            }
+
+            .status-medium {
+                background: #fff3cd;
+                color: #856404;
+            }
+
+            .no-data {
+                text-align: left;
+                padding: 40px 20px;
+                color: #6c757d;
+                font-style: italic;
+            }
+
+            .no-data i {
+                font-size: 2rem;
+                margin-bottom: 10px;
+                opacity: 0.5;
+            }
+
+            /* Force Odoo to allow scrolling */
+            html, body {
+                height: 100% !important;
+                overflow: auto !important;
+            }
+
+            .o_web_client {
+                height: 100vh !important;
+                overflow: auto !important;
+            }
+
+            /* Mobile responsive fixes */
+            @media (max-width: 768px) {
+                .dashboard-container {
+                    padding: 10px;
+                    height: auto !important;
+                }
+
+                .filter-bar {
+                    position: relative;
+                    top: auto;
+                }
+
+                .charts-grid,
+                .tables-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .chart-card,
+                .table-card {
+                    min-width: unset;
+                }
+
+                .kpi-section {
+                    grid-template-columns: 1fr;
+                }
+
+                .chart-container {
+                    height: 250px;
+                }
+
+                .table-card-body {
+                    max-height: 300px;
+                }
+
+                /* Ensure mobile scrolling works */
+                .o_content {
+                    height: auto !important;
+                    min-height: 100vh !important;
+                }
+            }
+
+            /* Loading animation */
+            @keyframes spin {
+                0% { transform: translate(-50%, -50%) rotate(0deg); }
+                100% { transform: translate(-50%, -50%) rotate(360deg); }
+            }
+        </style>
+
+
+        <!-- The rest of your template remains unchanged -->
+        <div class="dashboard-container">
+             <div class="dashboard-wrapper">
+                <!-- Filter Bar - Smaller size with no blue colors -->
+                 <div class="filter-bar">
+                    <div class="filter-group">
+                        <i class="fas fa-calendar-alt"></i>
+                        <label for="startDate">From</label>
+                        <input 
+                            type="date" 
+                            id="startDate" 
+                            class="filter-input date-input"
+                            t-att-value="dateState ? formatDateForInput(dateState.startDate) : ''"
+                            t-on-change="onStartDateChange"
+                        />
+                    </div>
+
+                     <div class="filter-group">
+                        <i class="fas fa-calendar-alt"></i>
+                         <label for="endDate">To</label>
+                         <input 
+                            type="date" 
+                            id="endDate" 
+                            class="filter-input date-input"
+                            t-att-value="dateState ? formatDateForInput(dateState.endDate) : ''"
+                            t-on-change="onEndDateChange"
+                        />
+                    </div>
+
+                     <div class="filter-group">
+                        <i class="fas fa-warehouse"></i>
+                         <label for="warehouseFilter">Warehouse</label>
+                         <select id="warehouseFilter" class="filter-select">
+                            <option value="">All Warehouses</option>
+                        </select>
+                    </div>
+
+                     <div class="filter-group">
+                        <i class="fas fa-users"></i>
+                         <label for="userFilter">User</label>
+                         <select id="userFilter" class="filter-select">
+                            <option value="">All Users</option>
+                        </select>
+                    </div>
+
+                     <div class="filter-group">
+                        <i class="fas fa-list"></i>
+                         <label for="countFilter">Count</label>
+                         <select id="countFilter" class="filter-select">
+                            <option value="">All Counts</option>
+                        </select>
+                    </div>
+                </div>
+
+                 <!-- KPI Cards Section -->
+                 <div class="kpi-section">
+                    <div class="kpi-card kpi-1" data-action="sessions">
+                        <div class="kpi-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <div class="kpi-value total-sessions-completed">0</div>
+                            <div class="kpi-label">Sessions Completed</div>
+                        </div>
+                    </div>
+
+                     <div class="kpi-card kpi-2" data-action="pending-adjustments">
+                        <div class="kpi-icon">
+                            <i class="fas fa-clipboard-check"></i>
+                        </div>
+                         <div class="kpi-content">
+                            <div class="kpi-value pending-adjustments">0</div>
+                             <div class="kpi-label">Pending Adjustments</div>
+                        </div>
+                    </div>
+
+                     <div class="kpi-card kpi-3" data-action="accuracy">
+                        <div class="kpi-icon">
+                            <i class="fas fa-bullseye"></i>
+                        </div>
+                         <div class="kpi-content">
+                            <div class="kpi-value global-accuracy">0%</div>
+                             <div class="kpi-label">Accuracy</div>
+                        </div>
+                    </div>
+
+                     <div class="kpi-card kpi-4" data-action="products">
+                        <div class="kpi-icon">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                         <div class="kpi-content">
+                            <div class="kpi-value total-products-counted">0</div>
+                             <div class="kpi-label">Products Counted</div>
+                        </div>
+                    </div>
+
+                     <div class="kpi-card kpi-5" data-action="discrepancy">
+                        <div class="kpi-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                         <div class="kpi-content">
+                            <div class="kpi-value total-discrepancy-qty">0</div>
+                             <div class="kpi-label">Total Discrepancy</div>
+                        </div>
+                    </div>
+
+                     <div class="kpi-card kpi-6" data-action="loss">
+                        <div class="kpi-icon">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                         <div class="kpi-content">
+                            <div class="kpi-value total-inventory-loss">₹0</div>
+                             <div class="kpi-label">Loss Amount</div>
+                        </div>
+                    </div>
+
+                     <div class="kpi-card kpi-7" data-action="approvals">
+                        <div class="kpi-icon">
+                            <i class="fas fa-hourglass-half"></i>
+                        </div>
+                         <div class="kpi-content">
+                            <div class="kpi-value approvals-pending">0</div>
+                             <div class="kpi-label">Approvals Pending</div>
+                        </div>
+                    </div>
+                </div>
+
+                 <div class="charts-section">
+                 <!-- User Accuracy Chart -->
+                     <div class="chart-card">
+                        <div class="chart-header">
+                            <h3 class="chart-title">User Accuracy vs Mistakes</h3>
+                            <i class="fas fa-users" style="color: #3498db;"></i>
+                        </div>
+                         <div class="chart-container">
+                                <canvas id="chart_users_accuracy"></canvas>
+                        </div>
+                     </div>
+
+                    <!-- Products Requiring Attention Table -->
+                     <div class="table-card wide">
+                        <div class="table-card-header">
+                            <h5 class="table-card-title">Products Requiring Attention</h5>
+                        </div>
+                         <div class="table-card-body">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Discrepancy Frequency</th>
+                                                <th>Total Loss Amount</th>
+                                                <th>Avg Discrepancy Qty</th>
+                                                <th>Discrepancy Ratio</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-if="tableData.highRiskProducts.length === 0">
+                                                <tr>
+                                                    <td colspan="5" class="no-data" style="text-align: left;">
+                                                        <i class="fas fa-inbox mr-2"></i>No products requiring attention found.
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                            <tr t-foreach="tableData.highRiskProducts" t-as="prod" t-key="prod.id"
+                                                t-att-data-id="prod.id"
+                                                t-att-data-model="prod.model">
+                                                <td t-esc="prod.name"/>
+                                                <td>
+                                                    <span class="status-warning status-badge"
+                                                          t-esc="prod.discrepancy_frequency"/>
+                                                </td>
+                                                <td t-esc="'₹' + formatNumber(prod.total_loss_amount)"/>
+                                                <td t-esc="prod.avg_discrepancy_qty"/>
+                                                <td t-esc="(prod.discrepancy_ratio || 0) + '%'"/>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                 </div>
+
+                 <div class="charts-section">
+                     <div class="table-card wide">
+                            <div class="table-card-header">
+                                <h5 class="table-card-title">Recent Adjustments</h5>
+                            </div>
+                         <div class="table-card-body">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Count ID</th>
+                                            <th>Product</th>
+                                            <th>Theoretical</th>
+                                            <th>Counted</th>
+                                            <th>Adjustment Qty</th>
+                                            <th>Adjustment Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-if="tableData.recentAdjustments.length === 0">
+                                            <tr>
+                                                <td colspan="6" class="no-data" style="text-align: left;">
+                                                    <i class="fas fa-inbox mr-2"></i>No recent adjustments found.
+                                                </td>
+                                            </tr>
+                                        </t>
+                                        <tr t-foreach="tableData.recentAdjustments" t-as="adj"
+                                            t-key="adj.row_id"
+                                            t-att-data-id="adj.id"
+                                            t-att-data-model="adj.model">
+                                            <td t-esc="adj.name"/>
+                                            <td t-esc="adj.product"/>
+                                            <td t-esc="adj.theoretical"/>
+                                            <td t-esc="adj.counted"/>
+                                            <td t-esc="adj.adjustment_qty"/>
+                                            <td t-esc="adj.adjustment_value"/>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                     <div class="chart-card">
+                            <div class="chart-header">
+                                <h3 class="chart-title">Discrepancy by Location</h3>
+                                <i class="fas fa-map-marker-alt" style="color: #8b5cf6;"></i>
+                            </div>
+                         <div class="chart-container">
+                                <canvas id="chart_discrepancy_location"></canvas>
+                            </div>
+                     </div>
+                </div>
+                 <div class="charts-section">
+                    <!-- Mistake Reasons Chart -->
+                     <div class="chart-card">
+                        <div class="chart-header">
+                            <h3 class="chart-title">Mistake Reasons Distribution</h3>
+                            <i class="fas fa-chart-pie" style="color: #e74c3c;"></i>
+                        </div>
+                         <div class="chart-container">
+                            <canvas id="chart_mistake_reasons"></canvas>
+                        </div>
+                    </div>
+
+                     <!-- Discrepancy by Location Chart -->
+
+                     <!-- Open Sessions Table -->
+                     <div class="table-card wide">
+                              <div class="table-card-header">
+                                  <h5 class="table-card-title">Open Sessions</h5>
+                              </div>
+                         <div class="table-card-body">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Session ID</th>
+                                            <th>Warehouse</th>
+                                            <th>Assigned Users</th>
+                                            <th>Start Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-if="tableData.openSessions.length === 0">
+                                            <tr>
+                                                <td colspan="4" class="no-data" style="text-align: left;">
+                                                    <i class="fas fa-inbox mr-2"></i>No open sessions found for the
+                                                    selected
+                                                    period.
+                                                </td>
+                                            </tr>
+                                        </t>
+                                        <tr t-foreach="tableData.openSessions" t-as="session" t-key="session.id"
+                                            t-att-data-id="session.id">
+                                            <td>
+                                                <span class="status-badge status-open" t-esc="session.name"/>
+                                            </td>
+                                            <td t-esc="session.warehouse"/>
+                                            <td t-esc="session.users"/>
+                                            <td t-esc="session.start_time"/>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                              </div>
+                          </div>
+                </div>
+                 <div class="charts-section">
+                     <div class="chart-card ">
+                         <div class="chart-header">
+                             <h3 class="chart-title">Discrepancy Trend Over Time</h3>
+                             <i class="fas fa-chart-line" style="color: #f39c12;"></i>
+                         </div>
+                         <div class="chart-container">
+                             <canvas id="chart_discrepancy_trend"></canvas>
+                         </div>
+                     </div>
+                     <div class="chart-card">
+                         <div class="chart-header">
+                             <h3 class="chart-title">Top Products by Loss Value</h3>
+                             <i class="fas fa-box" style="color: #9b59b6;"></i>
+                         </div>
+                         <div class="chart-container">
+                             <canvas id="chart_top_products_loss"></canvas>
+                         </div>
+                     </div>
+                </div>
+             </div>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,73 @@
+Date : 13th February 2026
+Version : '10.0' (in __manifest__.py)
+Odoo Version : 18
+Done by : Devangi Pabari
+Tested By : Devangi Pabari
+Changes : Fixed issue related to inventory loss report access because of sudo
+
+Date : 9th February 2026
+Version : '9.0' (in __manifest__.py)
+Odoo Version : 18
+Done by : Bansi Ujainiya
+Tested By : Devangi Pabari
+Changes : code optimisation
+
+Date : 2nd January 2026
+Version : '8.0' (in __manifest__.py)
+Odoo Version : 18
+Done by : Hemangi Desai
+Tested By : Devangi Pabari
+Changes : Addition of dashboard,report modification and new reports added,count and session approval changes,
+user wise tracking in session lines and count lines
+
+Date : 17th September 2025
+Version : '7.0' (in __manifest__.py)
+Odoo Version : 18
+Done by : Devangi Pabari
+Tested By : Devangi Pabari
+Changes : Fixed the issue of res_config_settings file
+
+Date : 28th July 2025
+Version : '6.0' (in __manifest__.py)
+Odoo Version : 18
+Done by : Biren Chauhan
+Tested By : Devangi Pabari
+Changes : Fixed the issue of scanned quantity not increasing if record is not saved(for traceble and non traceble products
+
+Date : 30th Jun 2025
+Version : '5.0' (in __manifest__.py)
+Odoo Version : 18
+Done by : Yash Rathod
+Tested By : Nikhil Sudra
+Changes : Fixed the issue of wrong import libraries
+
+Date : 30th Jun 2025
+Version : '4.0' (in __manifest__.py)
+Odoo Version : 18
+Done by : Yash Rathod
+Tested By : Nikhil Sudra
+Changes : Implemented the functionality of barcode scanning from mobile or any other device without barcode gun or barcode app
+          using native barcode app of odoo with compatibility of community version.
+          Removed custom settings model and used base settings model
+          Correction in user statistics report
+
+Date : 24th Jun 2025
+Version : '3.0' (in __manifest__.py)
+Odoo Version : 18
+Done by : Devangi Pabari
+Tested By : Devangi Pabari
+Changes : Fixed the issue related to inventory adjustment not validate
+
+Date : 9th Jun 2025
+Version : '2.0' (in __manifest__.py)
+Odoo Version : 18
+Done by : Devangi Pabari
+Tested By : Devangi Pabari
+Changes : Fixed the issue related to open settings record singleton
+
+Date : 28th Nov 2024
+Version : '1.0' (in __manifest__.py)
+Odoo Version : 18
+Done by : Devangi Pabari
+Tested By : Payal Kheradiya
+Changes : Inventory count managements

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data noupdate="1">
+        <record model="ir.cron" id="auto_create_inventory_count_with_planner_cron">
+            <field name="name">Auto Create Inventory Count with Planner</field>
+            <field name="model_id" ref="setu_inventory_count_management.model_setu_stock_inventory_count_planner"/>
+            <field name="state">code</field>
+            <field name="code">model.auto_create_inventory_count_record()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">hours</field>
+            <field name="nextcall" eval="(datetime.now() + timedelta(hours=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="active" eval="True"/>
+            <field name="user_id" ref="base.user_root"/>
+        </record>
+    </data>
+</odoo>

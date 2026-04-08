@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="setu_inventory_count_valuation_report_tree_view" model="ir.ui.view">
+            <field name="name">setu_inventory.count.valuation.report.tree.view</field>
+            <field name="model">setu.inventory.count.valuation.report</field>
+            <field name="arch" type="xml">
+                <list string="Inventory Count Valuation Up/Down Report"
+                      decoration-danger="total_valuation &lt; 0 or adjusted_qty &lt; 0"
+                      decoration-success="total_valuation &gt; 0 or adjusted_qty &gt; 0"
+                      create="0" edit="0" delete="0">
+                    <field name="inventory_count_date" widget="none" string="Count Date"/>
+                    <field name="count_id" widget="none"/>
+                    <field name="company_id" column_invisible="1"/>
+                    <field name="user_id" widget="none"/>
+                    <field name="product_id" widget="none"/>
+                    <field name="lot_id" widget="none"/>
+                    <field name="location_id" widget="none"/>
+                    <field name="adjusted_qty" widget="none"/>
+                    <field name="total_valuation" widget="none"/>
+                    <field name="valuation_graph" widget="none"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="setu_inventory_count_valuation_report_form_view" model="ir.ui.view">
+            <field name="name">setu_inventory.count.valuation.form.tree.view</field>
+            <field name="model">setu.inventory.count.valuation.report</field>
+            <field name="arch" type="xml">
+                <form string="Inventory Count Valuation Up/Down Report">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="start_date"/>
+                            </group>
+                            <group>
+                                <field name="end_date"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group>
+                                <field name="location_ids" options="{'no_create': True, 'no_create_edit':True}"
+                                       domain="[('usage', '=', 'internal'), '|', ('company_id', '=', False), ('company_id', 'in', allowed_company_ids)]"
+                                       widget="many2many_tags"/>
+                            </group>
+                            <group>
+                                <field name="user_ids" options="{'no_create': True, 'no_create_edit':True}"
+                                       string="Approvers" widget="many2many_tags"
+                                       domain="[('share', '=', False), ('company_ids', 'in', allowed_company_ids)]"/>
+                            </group>
+                        </group>
+                    </sheet>
+                    <footer>
+                        <button name="generate_report" string="Generate" type="object" class="oe_highlight"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+
+        <record id="setu_inventory_count_valuation_report_search_view" model="ir.ui.view">
+            <field name="name">setu_inventory.count.valuation.search.tree.view</field>
+            <field name="model">setu.inventory.count.valuation.report</field>
+            <field name="arch" type="xml">
+                <search string="Inventory Count Valuation Up/Down Report">
+                    <field name="count_id" string="Count"
+                           filter_domain="['|','|','|','|',('user_id','ilike',self),('lot_id','ilike',self),
+                           ('product_id','ilike',self),('location_id','ilike',self),('count_id','ilike',self),]"/>
+                    <field name="product_id"/>
+                    <field name="lot_id"/>
+                    <field name="location_id"/>
+                    <field name="company_id"/>
+                    <filter string="UP" name="filter_adjustment_in" domain="[('valuation_graph','=','UP')]"
+                            context="{}"/>
+                    <filter string="DOWN" name="filter_adjustment_out"
+                            domain="[('valuation_graph','=','DOWN')]"
+                            context="{}"/>
+                    <group >
+                        <filter string="Inventory Count" name="group_by_count_id" domain="[]"
+                                context="{'group_by':'count_id'}"/>
+                        <filter string="Product" name="group_by_product" domain="[]"
+                                context="{'group_by':'product_id'}"/>
+                        <filter string="Lot" name="group_by_lot" domain="[]"
+                                context="{'group_by':'lot_id'}"/>
+                        <filter string="Responsible" name="group_by_user_id" domain="[]"
+                                context="{'group_by':'user_id'}"/>
+                        <filter string="Adjustment Type" name="group_by_valuation_graph" domain="[]"
+                                context="{'group_by':'valuation_graph'}"/>
+                        <filter string="Location" name="group_by_location" domain="[]"
+                                context="{'group_by':'location_id'}"/>
+                        <filter string="Date" name="group_by_inventory_count_date" domain="[]"
+                                context="{'group_by':'inventory_count_date'}"/>
+                        <filter string="Company" name="group_by_company" domain="[]"
+                                context="{'group_by':'company_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+
+        <record id="setu_inventory_count_valuation_report_action" model="ir.actions.act_window">
+            <field name="name">Inventory Count Valuation Up/Down Report</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">setu.inventory.count.valuation.report</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <record id="setu_inventory_count_valuation_report_record_action" model="ir.actions.act_window">
+            <field name="name">Inventory Count Valuation Up/Down Report</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">setu.inventory.count.valuation.report</field>
+            <field name="view_mode">list</field>
+             <field name="domain">[('company_id', 'in',allowed_company_ids)]</field>
+            <field name="context">{'search_default_group_by_count_id':1}</field>
+            <field name="help" type="html">
+                <p class="oe_view_nocontent_create">
+                    There are no Inventory Count Valuation Report.
+                </p>
+            </field>
+        </record>
+
+
+        <record id="setu_inventory_count_valuation_report_server_action" model="ir.actions.server">
+            <field name="name">Inventory Count Valuation Up/Down Report</field>
+            <field name="model_id" ref="setu_inventory_count_management.model_setu_inventory_count_valuation_report"/>
+            <field name="state">code</field>
+            <field name="code">action = model.generate_report()</field>
+        </record>
+
+    </data>
+</odoo>

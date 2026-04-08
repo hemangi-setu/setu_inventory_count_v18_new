@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_setu_inventory_operation_dashboard" model="ir.actions.client">
+        <field name="name">Inventory Performance</field>
+        <field name="tag">setu_inventory_operation_dashboard</field>
+    </record>
+
+    <menuitem
+        name="Inventory Performance"
+        id="menu_setu_inventory_performance_dashboard"
+        action="setu_inventory_count_management.action_setu_inventory_operation_dashboard"
+        parent="setu_inventory_count_management.menu_setu_inventory_dashboards_root"
+        groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"
+        sequence="5"
+    />
+</odoo>

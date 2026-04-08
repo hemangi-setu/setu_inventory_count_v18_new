@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+        <record id="setu_extra_lot_found_wizard_form_view" model="ir.ui.view">
+            <field name="name">setu.extra.lot.found.wizard.form.view</field>
+            <field name="model">setu.extra.lot.found.wizard</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <field name="note" nolabel="1"/>
+                        <field name="note_to_continue" style="color: red; font-size:14px" readonly="1"/>
+                    </sheet>
+
+                    <footer>
+                        <button string="continue" name="add_the_extra_lot_lines_in_adj" type="object"
+                                class="btn-primary"/>
+                        <button string="cancel" special="cancel" class="btn-primary"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="setu_extra_lot_found_wizard_action" model="ir.actions.act_window">
+            <field name="name">Extra Lot Found</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">setu.extra.lot.found.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+    </data>
+</odoo>

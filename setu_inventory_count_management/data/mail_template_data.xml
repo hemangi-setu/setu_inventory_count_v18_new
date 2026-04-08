@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="mail_template_request_for_inventory_count" model="mail.template">
+            <field name="name">Send Inventory Count</field>
+            <field name="model_id" ref="setu_inventory_count_management.model_setu_stock_inventory_count"/>
+            <field name="subject">Send {{object.name}} Inventory Count</field>
+            <field name="email_from">{{object.user_id.partner_id.email}}</field>
+            <field name="reply_to">{{object.user_id.partner_id.email}}</field>
+            <field name="lang">{{object.user_id.lang}}</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    Hello<strong t-out="object.approver_id.name or ''"/>,
+                    <br/>
+                    <br/>
+                    You have been assigned to new Inventory Count.
+                    <br/>
+                    <br/>
+                    Please check :
+                    <strong t-out="object.name or ''"/>
+                    <br/>
+                    <br/>
+                    Best regards,
+                    <br/>
+                    <strong t-out="object.user_id.name or ''"/>
+                </div>
+            </field>
+        </record>
+        
+        <!-- Mail Template: Notify Approver on Count Creation -->
+        <record id="mail_template_notify_approver_count_creation" model="mail.template">
+            <field name="name">Notify Approver - Count Created</field>
+            <field name="model_id" ref="setu_inventory_count_management.model_setu_stock_inventory_count"/>
+            <field name="subject">New Inventory Count Created: {{object.name}}</field>
+            <field name="email_from">{{object.create_uid.partner_id.email or object.company_id.email or ''}}</field>
+            <field name="reply_to">{{object.create_uid.partner_id.email or object.company_id.email or ''}}</field>
+            <field name="lang">{{object.approver_id.lang or 'en_US'}}</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="email_to">{{object.approver_id.partner_id.email}}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Hello <strong t-out="object.approver_id.name or ''"/>.</p>
+                    <br/>
+                    <p>A new Inventory Count has been created and requires your approval.</p>
+                    <br/>
+                    <p><strong>Count Details:</strong></p>
+                    <ul>
+                        <li><strong>Count Name:</strong> <span t-out="object.name or ''"/></li>
+                        <li><strong>Warehouse:</strong> <span t-out="object.warehouse_id.name or ''"/></li>
+                        <li><strong>Date:</strong> <span t-out="object.inventory_count_date or ''"/></li>
+                        <li><strong>State:</strong> <span t-out="object.state or ''"/></li>
+                    </ul>
+                    <br/>
+                    <p>Please review and approve the inventory count.</p>
+                    <br/>
+                    <p>Best regards,<br/>
+                    <strong t-out="object.create_uid.name or 'System'"/></p>
+                </div>
+            </field>
+        </record>
+        
+        <!-- Mail Template: Notify Users on Session Assignment -->
+        <record id="mail_template_notify_users_session_assignment" model="mail.template">
+            <field name="name">Notify Users - Session Assignment</field>
+            <field name="model_id" ref="setu_inventory_count_management.model_setu_inventory_count_session"/>
+            <field name="subject">You have been assigned to Inventory Count Session: {{object.name}}</field>
+            <field name="email_from">{{object.company_id.email_formatted or object.company_id.email or object.inventory_count_id.create_uid.partner_id.email or ''}}</field>
+            <field name="reply_to">{{object.company_id.email_formatted or object.company_id.email or object.inventory_count_id.create_uid.partner_id.email or ''}}</field>
+            <field name="lang">{{ ctx.get('lang') or 'en_US' }}</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="email_to">{{ ctx.get('user_email') or '' }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Hello <strong t-out="ctx.get('user_name') or 'User'"/>.</p>
+                    <br/>
+                    <p>You have been assigned to a new Inventory Count Session.</p>
+                    <br/>
+                    <p><strong>Session Details:</strong></p>
+                    <ul>
+                        <li><strong>Session Name:</strong> <span t-out="object.name or ''"/></li>
+                        <li><strong>Inventory Count:</strong> <span t-out="object.inventory_count_id.name or ''"/></li>
+                        <li><strong>Warehouse:</strong> <span t-out="object.warehouse_id.name or ''"/></li>
+                        <li t-if="object.location_id"><strong>Location:</strong> <span t-out="object.location_id.name or ''"/></li>
+                        <li><strong>State:</strong> <span t-out="object.state or ''"/></li>
+                    </ul>
+                    <br/>
+                    <p>Please start working on your assigned session.</p>
+                    <br/>
+                    <p>Best regards,<br/>
+                    <strong t-out="object.inventory_count_id.create_uid.name or 'System'"/></p>
+                </div>
+            </field>
+        </record>
+
+        <record id="mail_template_notify_approver_session_submit" model="mail.template">
+            <field name="name">Notify Approver - Session Submitted</field>
+            <field name="model_id" ref="setu_inventory_count_management.model_setu_inventory_count_session"/>
+            <field name="subject">Session Submitted for Approval: {{object.name}}</field>
+            <field name="email_from">{{object.company_id.email_formatted or object.company_id.email or ctx.get('submitter_email') or ''}}</field>
+            <field name="reply_to">{{object.company_id.email_formatted or object.company_id.email or ctx.get('submitter_email') or ''}}</field>
+            <field name="lang">{{ ctx.get('lang') or 'en_US' }}</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="email_to">{{object.approver_id.partner_id.email or ''}}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Hello <strong t-out="ctx.get('approver_name') or object.approver_id.name or 'Approver'"/>.</p>
+                    <br/>
+                    <p>The following inventory count session has been submitted and is waiting for your approval.</p>
+                    <br/>
+                    <p><strong>Session Details:</strong></p>
+                    <ul>
+                        <li><strong>Session Name:</strong> <span t-out="object.name or ''"/></li>
+                        <li><strong>Inventory Count:</strong> <span t-out="object.inventory_count_id.name or ''"/></li>
+                        <li><strong>Warehouse:</strong> <span t-out="object.warehouse_id.name or ''"/></li>
+                        <li><strong>Submitted By:</strong> <span t-out="ctx.get('submitter_name') or object.write_uid.name or ''"/></li>
+                        <li><strong>Submitted On:</strong> <span t-out="object.session_submit_date or ''"/></li>
+                    </ul>
+                    <br/>
+                    <p>Please review and approve this session.</p>
+                </div>
+            </field>
+        </record>
+    </data>
+</odoo>

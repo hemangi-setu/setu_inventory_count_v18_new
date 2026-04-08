@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="setu_stock_inventory_form_view" model="ir.ui.view">
+            <field name="name">setu.stock.inventory.form</field>
+            <field name="model">setu.stock.inventory</field>
+            <field name="arch" type="xml">
+                <form string="Stock Inventory" create="0">
+                    <header>
+                        <field name="state" readonly="1" widget="statusbar" statusbar_visible="confirm, done"/>
+                        <button name="action_cancel" type="object" string="Cancel"
+                                invisible="state not in ['draft', 'confirm']"
+                                confirm="Are you sure to cancel this inventory adjustment?"/>
+                        <button name="action_validate" type="object" string="Validate" class="oe_highlight"
+                                confirm="Are you sure to validate this inventory adjustment?"
+                                invisible="state != 'confirm'"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <label for="name" readonly="1"/>
+                            <h1>
+                                <field name="name" readonly="1" placeholder="Name"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field readonly="1" name="partner_id" options="{'no_create': True, 'no_open':True}"/>
+                                <field readonly="1" name="inventory_count_id"/>
+                            </group>
+                            <group>
+                                <field readonly="1" name="location_id" options="{'no_create': True, 'no_open':True}"/>
+                                <field readonly="1" name="date"/>
+                                <field readonly="state != 'draft'" name="company_id"
+                                       options="{'no_create': True, 'no_open':True}"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Lines">
+                                <field name="line_ids" readonly="state not in ['draft','confirm']">
+                                    <list editable="bottom" create="0">
+                                        <field name="product_id" readonly="1"
+                                               options="{'no_create': True, 'no_open':True}"/>
+                                        <field name="location_id" readonly="1"
+                                               options="{'no_create': True, 'no_open':True}"/>
+                                        <field name="prod_lot_id" readonly="1"
+                                               options="{'no_create': True, 'no_open':True}"/>
+                                        <field name="serial_number_ids" widget="many2many_tags" readonly="1"
+                                               options="{'no_create': True, 'no_open':True}"/>
+                                        <field name="theoretical_qty" readonly="1"/>
+                                        <field name="product_qty"
+                                               readonly="parent.state not in ['draft','confirm']"/>
+                                        <field name="difference_qty" readonly="1"/>
+                                        <field name="discrepancy_value" readonly="1"/>
+                                    </list>
+
+                                </field>
+                            </page>
+                            <page string="Stock Moves">
+                                <field name="move_ids" readonly="1" options="{'no_open':True}">
+                                    <list>
+                                        <field name="product_id" options="{'no_create': True, 'no_open':True}"/>
+                                        <field name="location_id" options="{'no_create': True, 'no_open':True}"/>
+                                        <field name="location_dest_id" options="{'no_create': True, 'no_open':True}"/>
+                                        <field name="product_uom_qty"/>
+                                        <field name="state"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="setu_stock_inventory_tree_view" model="ir.ui.view">
+            <field name="name">setu.stock.inventory.tree</field>
+            <field name="model">setu.stock.inventory</field>
+            <field name="arch" type="xml">
+                <list string="Stock Inventory" create="0">
+                    <field name="name"/>
+                    <field name="partner_id"/>
+                    <field name="location_id"/>
+                    <field name="date"/>
+                    <field name="state"/>
+                    <field name="inventory_count_id"/>
+                </list>
+            </field>
+        </record>
+        <record id="setu_stock_inventory_kanban_view" model="ir.ui.view">
+            <field name="name">setu.stock.inventory.kanban</field>
+            <field name="model">setu.stock.inventory</field>
+            <field name="arch" type="xml">
+                <kanban create="0" edit="0" delete="0" default_group_by="state">
+                    <field name="name"/>
+                    <field name="state"/>
+                    <field name="partner_id"/>
+                    <field name="location_id"/>
+                    <field name="date"/>
+                    <field name="line_count"/>
+                    <field name="difference_line_count"/>
+                    <field name="loss_value"/>
+                    <field name="gain_value"/>
+                    <field name="currency_id"/>
+                    <templates>
+                        <t t-name="card">
+                            <div t-att-class="(record.loss_value.value || 0) &lt; 0 ? 'oe_kanban_global_click o_kanban_record shadow-sm rounded-3 p-3 setu_adj_card setu_adj_loss_negative' : 'oe_kanban_global_click o_kanban_record shadow-sm rounded-3 p-3 setu_adj_card setu_adj_loss_positive'">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div class="fw-bold">
+                                        <field name="name"/>
+                                    </div>
+                                    <div>
+                                        <span class="badge rounded-pill setu_badge_in_progress"
+                                              invisible="state != 'confirm'">IN PROGRESS
+                                        </span>
+                                        <span class="badge rounded-pill text-bg-success" invisible="state != 'done'">
+                                            VALIDATED
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="small text-muted mb-2 text-nowrap"
+                                     style="overflow:hidden; text-overflow:ellipsis;">
+                                    <field name="location_id"/>
+                                    <span class="mx-1">•</span>
+                                    <field name="date"/>
+                                </div>
+
+                                <div class="d-flex align-items-center justify-content-between small mb-2">
+                                    <span class="text-nowrap">
+                                        <i class="fa fa-user me-1"/>
+                                        <field name="partner_id"/>
+                                    </span>
+                                    <span class="text-nowrap">
+                                        <i class="fa fa-exclamation-triangle me-1"/>
+                                        <field name="difference_line_count"/>
+                                    </span>
+                                </div>
+
+                                <div class="border rounded-2 p-2 mb-2 bg-light">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="small fw-semibold text-danger">
+                                            <i class="fa fa-arrow-down me-1"/>
+                                            Loss Value
+                                        </span>
+                                        <span class="text-danger fw-bold">
+                                            <field name="loss_value" widget="monetary"
+                                                   options="{'currency_field': 'currency_id'}"/>
+                                        </span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-1">
+                                        <span class="small fw-semibold text-success">
+                                            <i class="fa fa-arrow-up me-1"/>
+                                            Gain Value
+                                        </span>
+                                        <span class="text-success fw-bold">
+                                            <field name="gain_value" widget="monetary"
+                                                   options="{'currency_field': 'currency_id'}"/>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-end">
+                                    <button name="action_validate" type="object" string="Validate"
+                                            class="btn btn-sm btn-primary"
+                                            invisible="state != 'confirm'"/>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+        <record id="setu_stock_inventory_search_view" model="ir.ui.view">
+            <field name="name">setu.stock.inventory.search</field>
+            <field name="model">setu.stock.inventory</field>
+            <field name="arch" type="xml">
+                <search string="Stock Inventory">
+                    <field name="name" string="Inventory Reference"/>
+                    <field name="location_id"/>
+                    <field name="partner_id"/>
+                    <field name="date"/>
+                    <field name="inventory_count_id"/>
+                    <filter string="Validated" name="done" domain="[('state','=','done')]"/>
+                    <filter string="Cancelled" name="cancel" domain="[('state','=','cancel')]"/>
+                    <separator/>
+                    <filter string="State" name="group_state" context="{'group_by':'state'}"/>
+                    <filter string="Location" name="group_location" context="{'group_by':'location_id'}"/>
+                    <filter string="Owner" name="group_owner" context="{'group_by':'partner_id'}"/>
+                    <filter string="Inventory Count" name="group_inventory_count"
+                            context="{'group_by':'inventory_count_id'}"/>
+                    <filter string="Date" name="group_date" context="{'group_by':'date'}"/>
+                </search>
+            </field>
+        </record>
+
+        <record id="setu_stock_inventory_act_window" model="ir.actions.act_window">
+            <field name="name">Stock Inventory</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">setu.stock.inventory</field>
+            <field name="view_mode">kanban,list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face" style="margin-top:250px;">
+                    There is no examples click here to add new Stock Inventory.
+                </p>
+            </field>
+        </record>
+    </data>
+</odoo>

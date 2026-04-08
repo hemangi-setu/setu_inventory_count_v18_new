@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+<!-- Inventory loss report [Count report is renamed as Inventory loss report]-->
+        <record id="setu_inventory_count_report_tree_view" model="ir.ui.view">
+            <field name="name">setu.inventory.count.report.tree.view</field>
+            <field name="model">setu.inventory.count.report</field>
+            <field name="arch" type="xml">
+                <list string="Inventory Count" create="0" edit="0" delete="0">
+                    <field name="user_id" string="Responsible" widget="none"  column_invisible="1"/>
+                    <field name="count_id" widget="none"/>
+                    <field name="product_id" widget="none"/>
+                    <field name="location_id" widget="none"/>
+                    <field name="lot_id" widget="none"/>
+                    <field name="serial_number_ids" widget="none"/>
+                    <field name="not_found_serial_number_ids" widget="none"/>
+                    <field name="warehouse_id" widget="none"/>
+                    <field name="inventory_count_date" widget="none" string="Date"/>
+                    <field name="theoretical_qty" widget="none"/>
+                    <field name="counted_qty" widget="none"/>
+                    <field name="discrepancy_qty" widget="none"/>
+                    <field name="discrepancy_value" widget="none"/>
+                    <field name="discrepancy_ratio" widget="percentpie"/>
+                    <field name="use_barcode_scanner"/>
+                </list>
+            </field>
+        </record>
+        <record id="setu_inventory_count_report_pivot_view" model="ir.ui.view">
+            <field name="name">setu.inventory.count.report.pivot.view</field>
+            <field name="model">setu.inventory.count.report</field>
+            <field name="arch" type="xml">
+                <pivot string="Inventory Count Report">
+                    <field name="count_id" type="row"/>
+                    <field name="theoretical_qty" type="measure"/>
+                    <field name="counted_qty" type="measure"/>
+                    <field name="discrepancy_qty" type="measure"/>
+                    <field name="discrepancy_ratio" type="measure"/>
+                </pivot>
+            </field>
+        </record>
+        <record id="setu_inventory_count_report_form_view" model="ir.ui.view">
+            <field name="name">setu.inventory.count.report.form.view</field>
+            <field name="model">setu.inventory.count.report</field>
+            <field name="arch" type="xml">
+                <form string="Inventory Count">
+                    <sheet>
+                        <div style="margin-top:-15px;">
+                            • Select the <strong>Location(s)</strong> and <strong>User(s)</strong> only if you want the
+                            data with specific location(s) and user(s).
+                            <br/>
+                            • Report will be generated based on selected <strong>Date Range</strong>.
+                            Do not select the dates if you want all data report.
+                        </div>
+                        <group>
+                            <group>
+                                <field name="start_date"/>
+                            </group>
+                            <group>
+                                <field name="end_date"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group>
+                                <field name="location_ids" options="{'no_create': True, 'no_create_edit':True}"
+                                       widget="many2many_tags"
+                                       domain="[('usage', '=', 'internal')]"/>
+                            </group>
+                            <group>
+                                <field name="user_ids" options="{'no_create': True, 'no_create_edit':True}"
+                                       string="Approvers" widget="many2many_tags"/>
+                            </group>
+                        </group>
+
+                    </sheet>
+                    <footer>
+                        <button name="generate_report" string="Generate" type="object" class="oe_highlight"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+
+        <record id="setu_inventory_count_report_search_view" model="ir.ui.view">
+            <field name="name">setu.inventory.count.report.search.view</field>
+            <field name="model">setu.inventory.count.report</field>
+            <field name="arch" type="xml">
+                <search string="Inventory Count Report">
+                    <field name="count_id" string="Name" filter_domain="['|','|','|',('count_id','ilike',self),
+                    ('product_id','ilike',self),('location_id','ilike',self),('warehouse_id','ilike',self)]"/>
+                    <field name="user_id"/>
+                    <field name="product_id"/>
+                    <field name="location_id"/>
+                    <field name="warehouse_id"/>
+                    <field name="count_id" />
+                    <filter string="Scanned" name="filter_scanned" domain="[('use_barcode_scanner','=','Scanned')]"
+                            context="{}"/>
+                    <filter string="Manual" name="filter_manual" domain="[('use_barcode_scanner','=','Manual')]"
+                            context="{}"/>
+                    <group>
+                        <filter string="Inventory Count" name="group_by_count_id" domain="[]"
+                                context="{'group_by':'count_id'}"/>
+                        <filter string="Responsible" name="group_by_user_id" domain="[]"
+                                context="{'group_by':'user_id'}"/>
+                        <filter string="Warehouse" name="group_by_warehouse" domain="[]"
+                                context="{'group_by':'warehouse_id'}"/>
+                        <filter string="Location" name="group_by_location" domain="[]"
+                                context="{'group_by':'location_id'}"/>
+                        <filter string="Product" name="group_by_product" domain="[]"
+                                context="{'group_by':'product_id'}"/>
+                        <filter string="Entry Mode" name="group_entry_mode"
+                                context="{'group_by':'use_barcode_scanner'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+
+        <record id="setu_inventory_count_report_action" model="ir.actions.act_window">
+            <field name="name">Inventory Loss Report</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">setu.inventory.count.report</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+
+        <record id="setu_inventory_count_report_record_action" model="ir.actions.act_window">
+            <field name="name">Inventory Loss Report</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">setu.inventory.count.report</field>
+            <field name="view_mode">list,pivot</field>
+            <field name="domain">[('warehouse_id.company_id', 'in', allowed_company_ids)]</field>
+            <field name="context">{'search_default_group_by_count_id':1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face" style="margin-top:250px;">
+                    There are no Inventory Counts completed.
+                </p>
+            </field>
+        </record>
+
+        <record id="setu_inventory_count_report_server_action" model="ir.actions.server">
+            <field name="name">Inventory Loss Report</field>
+            <field name="model_id" ref="setu_inventory_count_management.model_setu_inventory_count_report"/>
+            <field name="state">code</field>
+            <field name="code">action = model.generate_report()</field>
+        </record>
+
+        <menuitem id="setu_inventory_reporting_menu" name="Reporting"
+                  parent="setu_inventory_count_management.setu_inventory_count_root"
+        groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"/>
+
+        <menuitem id="setu_inventory_count_report_menu" name="Inventory Loss Report"
+                  parent="setu_inventory_count_management.setu_inventory_reporting_menu"
+                  action="setu_inventory_count_management.setu_inventory_count_report_action"
+                  sequence="1"/>
+    </data>
+</odoo>

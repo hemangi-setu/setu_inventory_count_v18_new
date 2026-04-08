@@ -1,0 +1,398 @@
+/* Operation dashboard — KPI + charts aligned with inventory_dashboard_template.xml */
+/* Keep dashboard content natural height so Odoo main content handles single page scroll. */
+
+.setu-inventory-operation-dashboard.op-dashboard-container {
+    padding: 20px;
+    background: #f8f9fa;
+    min-height: auto;
+    height: auto;
+    overflow: visible;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.setu-inventory-operation-dashboard .op-filter-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #ffffff;
+    padding-bottom: 0.75rem;
+    margin-bottom: 0;
+}
+
+.setu-inventory-operation-dashboard .op-filter-sticky .setu-dashboard-filter {
+    margin-bottom: 0;
+}
+
+.setu-inventory-operation-dashboard .kpi-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.setu-inventory-operation-dashboard .kpi-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 16px;
+    padding: 34px 28px;
+    min-height: 118px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.setu-inventory-operation-dashboard .kpi-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--card-color), transparent);
+}
+
+.setu-inventory-operation-dashboard .kpi-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.setu-inventory-operation-dashboard .kpi-icon {
+    font-size: 22px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: var(--card-bg);
+    color: var(--card-color);
+    box-shadow: 0 4px 12px var(--card-shadow);
+}
+
+.setu-inventory-operation-dashboard .kpi-content {
+    flex: 1;
+}
+
+.setu-inventory-operation-dashboard .kpi-value {
+    font-size: 21px;
+    font-weight: 800;
+    color: #1e293b;
+    margin-bottom: 6px;
+    line-height: 1.1;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.setu-inventory-operation-dashboard .kpi-label {
+    font-size: 15px;
+    color: #64748b;
+    font-weight: 600;
+    margin-bottom: 0;
+    letter-spacing: 0.5px;
+}
+
+.setu-inventory-operation-dashboard .kpi-1 {
+    --card-color: #3498db;
+    --card-bg: #dbeafe;
+    --card-shadow: rgba(59, 130, 246, 0.3);
+}
+
+.setu-inventory-operation-dashboard .kpi-2 {
+    --card-color: #2ecc71;
+    --card-bg: #dcfce7;
+    --card-shadow: rgba(34, 197, 94, 0.3);
+}
+
+.setu-inventory-operation-dashboard .kpi-3 {
+    --card-color: #e74c3c;
+    --card-bg: #fee2e2;
+    --card-shadow: rgba(239, 68, 68, 0.3);
+}
+
+.setu-inventory-operation-dashboard .kpi-4 {
+    --card-color: #f39c12;
+    --card-bg: #fef3c7;
+    --card-shadow: rgba(245, 158, 11, 0.3);
+}
+
+.setu-inventory-operation-dashboard .kpi-5 {
+    --card-color: #9b59b6;
+    --card-bg: #f3e8ff;
+    --card-shadow: rgba(168, 85, 247, 0.3);
+}
+
+.setu-inventory-operation-dashboard .kpi-6 {
+    --card-color: #1abc9c;
+    --card-bg: #ccfbf1;
+    --card-shadow: rgba(20, 184, 166, 0.3);
+}
+
+/* Charts + tables — match SetuInventoryDashboard (User Accuracy + High-Risk Products row) */
+
+.setu-inventory-operation-dashboard .charts-section {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    margin-bottom: 30px;
+}
+
+.setu-inventory-operation-dashboard .op-check-unscanned {
+    white-space: nowrap;
+}
+
+.setu-inventory-operation-dashboard .chart-card {
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e5e7eb;
+    padding: 20px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.setu-inventory-operation-dashboard .chart-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.setu-inventory-operation-dashboard .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.setu-inventory-operation-dashboard .chart-header.op-chart-header-center {
+    justify-content: center;
+    gap: 8px;
+}
+
+.setu-inventory-operation-dashboard .op-chart-header-icon--users {
+    color: #3b82f6;
+}
+
+.setu-inventory-operation-dashboard .chart-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.setu-inventory-operation-dashboard .op-chart-legend {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.setu-inventory-operation-dashboard .op-chart-legend.op-chart-legend-center {
+    justify-content: center;
+}
+
+.setu-inventory-operation-dashboard .op-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.setu-inventory-operation-dashboard .op-legend-swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.setu-inventory-operation-dashboard .op-legend-scanned {
+    background: #1cc88a;
+}
+
+.setu-inventory-operation-dashboard .op-legend-rejected {
+    background: #e74a3b;
+}
+
+.setu-inventory-operation-dashboard .chart-container {
+    position: relative;
+    height: 320px;
+    width: 100%;
+}
+
+.setu-inventory-operation-dashboard .chart-container canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.setu-inventory-operation-dashboard .table-card {
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e5e7eb;
+    padding: 20px;
+}
+
+.setu-inventory-operation-dashboard .table-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.setu-inventory-operation-dashboard .table-card-header {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    padding: 15px 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.setu-inventory-operation-dashboard .table-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.setu-inventory-operation-dashboard .table-card-body {
+    color: #2c3e50;
+    text-align: center;
+    font-weight: 400;
+    padding: 0;
+    max-height: none;
+    overflow: visible;
+}
+
+/* Scroll only the table area when more than 6 rows — keeps chart/table row layout unchanged */
+.setu-inventory-operation-dashboard .op-table-scroll {
+    overflow-x: auto;
+    min-width: 0;
+    scrollbar-width: thin;
+    scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+.setu-inventory-operation-dashboard .op-table-scroll--limited {
+    /* ~1 header row + 6 data rows at current cell padding/font */
+    max-height: calc(2.75rem + 6 * 2.65rem);
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.setu-inventory-operation-dashboard .table-card.wide {
+    grid-column: span 2;
+}
+
+.setu-inventory-operation-dashboard .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    min-width: 900px;
+    background: white;
+}
+
+.setu-inventory-operation-dashboard .data-table th {
+    background: #f8f9fa;
+    padding: 8px 12px;
+    text-align: center;
+    font-weight: 600;
+    color: #2c3e50;
+    border-bottom: 2px solid #e9ecef;
+    font-size: 0.9rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 120px;
+}
+
+.setu-inventory-operation-dashboard .data-table td {
+    padding: 8px 12px;
+    text-align: center;
+    font-weight: 300;
+    border-bottom: 1px solid #e9ecef;
+    color: #2c3e50;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 120px;
+}
+
+.setu-inventory-operation-dashboard .data-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.setu-inventory-operation-dashboard .data-table tr.op-pending-adj-row {
+    cursor: pointer;
+}
+
+.setu-inventory-operation-dashboard .data-table tr.op-manager-row {
+    cursor: pointer;
+}
+
+.setu-inventory-operation-dashboard .op-table-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.setu-inventory-operation-dashboard .op-table-scroll::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.setu-inventory-operation-dashboard .op-table-scroll::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+
+.setu-inventory-operation-dashboard .op-table-scroll::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+.setu-inventory-operation-dashboard .status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.setu-inventory-operation-dashboard .status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.setu-inventory-operation-dashboard .status-warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.setu-inventory-operation-dashboard .no-data {
+    text-align: left;
+    padding: 40px 20px;
+    color: #6c757d;
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    .setu-inventory-operation-dashboard .chart-container {
+        height: 250px;
+    }
+
+    .setu-inventory-operation-dashboard .op-table-scroll--limited {
+        max-height: calc(2.75rem + 6 * 2.5rem);
+    }
+
+    .setu-inventory-operation-dashboard .chart-card,
+    .setu-inventory-operation-dashboard .table-card {
+        min-width: unset;
+    }
+
+    .setu-inventory-operation-dashboard .table-card.wide {
+        grid-column: auto;
+    }
+}

@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="setu_stock_inventory_count_planner_form_view" model="ir.ui.view">
+            <field name="name">setu_stock_inventory_count_planner.form</field>
+            <field name="model">setu.stock.inventory.count.planner</field>
+            <field name="arch" type="xml">
+                <form string="Inventory Count Planner">
+                    <header>
+                        <button name="verify_inventory_count_planing" string="verify" type="object"
+                                invisible="not active or state != 'draft'"
+                                class="btn-primary"/>
+                        <button name="create_inventory_count" string="Run Manually" type="object"
+                                invisible="not active or state == 'draft'"
+                                class="btn-primary"/>
+                        <button name="reset_to_draft" string="Reset To Draft" type="object"
+                                invisible="not active or state == 'draft'"
+                                class="btn-primary"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,verified,Cancel"/>
+                    </header>
+                    <sheet>
+                        <div>
+                            <h1>
+                                <field name="name" required="1" nolabel="1"
+                                       readonly="state != 'draft'"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="inventory_count_date" readonly="state != 'draft'"/>
+                                <field name="approver_id" required="1" readonly="state != 'draft'"
+                                       options="{'no_create': True, 'no_open':True}"
+                                       domain="[('id','in',approver_ids)]"/>
+                                <field name="warehouse_id" required="1" readonly="state != 'draft'"
+                                       options="{'no_create': True, 'no_open':True}"/>
+                                <field name="company_id" readonly="1" invisible="not warehouse_id"
+                                       options="{'no_create': True, 'no_open':True}"/>
+                                <field name="approver_ids" invisible="1"/>
+                                <field name="use_barcode_scanner" widget="boolean_toggle"/>
+                                <field name="active" invisible="1"/>
+                            </group>
+                            <group>
+                                <field name="planner_type" widget="radio" required="1" readonly="state != 'draft'"/>
+                                <field name="locations_ids" invisible="1"/>
+                                <field name="location_ids" readonly="state != 'draft'"
+                                       domain="[('id','in',locations_ids),('usage','=','internal')]"
+                                       options="{'no_create': True, 'no_create_edit':True}"
+                                       widget="many2many_tags" invisible="planner_type != 'location_wise'"/>
+                                <field name="product_load_type" readonly="state != 'draft'" invisible="planner_type != 'location_wise'"/>
+                                <field name="product_load_type_product_wise" readonly="state != 'draft'" invisible="planner_type != 'product_wise'"/>
+                                <field name="include_child_locations" widget="boolean_toggle"
+                                       readonly="state != 'draft'"
+                                       invisible="planner_type != 'location_wise' or product_load_type == 'manual'"/>
+                                <field name="product_ids" readonly="state != 'draft'"
+                                       options="{'no_create': True, 'no_create_edit':True}"
+                                       widget="many2many_tags"
+                                       invisible="planner_type != 'product_wise' or product_load_type_product_wise == 'manual'"/>
+                                <field name="product_category_ids" readonly="state != 'draft'"
+                                       options="{'no_create': True, 'no_create_edit':True}"
+                                       widget="many2many_tags"
+                                       invisible="planner_type != 'product_wise' or product_load_type_product_wise == 'manual'"/>
+                                <field name="include_sub_categories" widget="boolean_toggle"
+                                       readonly="state != 'draft'"
+                                       invisible="planner_type != 'product_wise' or product_load_type_product_wise == 'manual'"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group string="Session Configuration">
+                                <field name="use_max_products" widget="boolean_toggle"
+                                       readonly="state != 'draft'"/>
+                                <field name="max_products_per_session" readonly="state != 'draft'"
+                                       invisible="not use_max_products"/>
+                            </group>
+                            <group string="Notification Configuration">
+                                <field name="notify_approver_on_count_creation" widget="boolean_toggle"
+                                       readonly="state != 'draft'"
+                                       help="Send notification to approver on count creation (Odoo inbox or email based on user preference)."/>
+                                <field name="notify_users_on_session_assignment" widget="boolean_toggle"
+                                       readonly="state != 'draft'"
+                                       help="Send notification to users on session assignment (Odoo inbox or email based on user preference)."/>
+                            </group>
+                        </group>
+                        <group>
+                            <group string="Frequency Configuration">
+                                <field name="frequency_type" required="1" readonly="state != 'draft'"/>
+                                <field name="planing_frequency" readonly="state != 'draft'"
+                                       invisible="frequency_type != 'custom'"/>
+                                <field name="start_from" readonly="state != 'draft'"/>
+                                <field name="previous_execution_datetime" readonly="1"/>
+                                <field name="next_execution_datetime" readonly="1"/>
+                            </group>
+                            <group string="Approval Configuration">
+                                <field name="approval_scope" readonly="state != 'draft'" required="1"/>
+                                <field name="adjustment_strategy" readonly="state != 'draft' or approval_scope == 'count_level'" required="1"/>
+                            </group>
+                        </group>
+                    </sheet>
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+
+        <record id="setu_stock_inventory_count_planner_tree_view" model="ir.ui.view">
+            <field name="name">setu_stock_inventory_count_planner.tree</field>
+            <field name="model">setu.stock.inventory.count.planner</field>
+            <field name="arch" type="xml">
+                <list string="Inventory Count Planner" decoration-muted="state=='Cancel'" create="true"
+                      default_order="id desc">
+                    <field name="name"/>
+                    <field name="planner_type"/>
+                    <field name="warehouse_id"/>
+                    <field name="approver_id"/>
+                    <field name="approval_scope"/>
+                    <field name="adjustment_strategy"/>
+                    <field name="frequency_type"/>
+                    <field name="next_execution_datetime"/>
+                    <field name="state"/>
+                </list>
+            </field>
+        </record>
+        <record id="setu_stock_inventory_count_planner_search_view" model="ir.ui.view">
+            <field name="name">setu.stock.inventory.count.planner.search</field>
+            <field name="model">setu.stock.inventory.count.planner</field>
+            <field name="arch" type="xml">
+                <search string="Inventory Count Planner">
+                    <field name="name"/>
+                    <field name="warehouse_id"/>
+                    <field name="approver_id"/>
+                    <field name="planner_type"/>
+                    <field name="approval_scope"/>
+                    <field name="adjustment_strategy"/>
+                    <field name="frequency_type"/>
+                    <filter string="State" name="group_state" context="{'group_by':'state'}"/>
+                    <filter string="Planner Type" name="group_planner_type" context="{'group_by':'planner_type'}"/>
+                    <filter string="Frequency" name="group_frequency" context="{'group_by':'frequency_type'}"/>
+                    <filter string="Warehouse" name="group_warehouse" context="{'group_by':'warehouse_id'}"/>
+                    <filter string="Approver" name="group_approver" context="{'group_by':'approver_id'}"/>
+                    <filter string="Approval Strategy" name="group_approval_scope"
+                            context="{'group_by':'approval_scope'}"/>
+                    <filter string="Adjustment Strategy" name="group_adjustment_strategy"
+                            context="{'group_by':'adjustment_strategy'}"/>
+                </search>
+            </field>
+        </record>
+
+
+        <record id="setu_stock_inventory_count_planner_act_window" model="ir.actions.act_window">
+            <field name="name">Inventory Count Planners</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">setu.stock.inventory.count.planner</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('company_id', 'in', allowed_company_ids)]</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face" style="margin-top:250px;">
+                    There is no Inventory Count Planner.
+                </p>
+                <p>
+                    Click create to add new Inventory Count Planner.
+                </p>
+            </field>
+        </record>
+
+        <menuitem name="Configuration" id="main_configuration_menu"
+                  parent="setu_inventory_count_management.setu_inventory_count_root" sequence="1000"/>
+
+
+        <menuitem name="Inventory Count Planners" id="setu_stock_inventory_count_planner_menu"
+                  parent="setu_inventory_count_management.main_configuration_menu"
+                  action="setu_stock_inventory_count_planner_act_window"
+                  groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager" sequence="2"/>
+
+    </data>
+</odoo>

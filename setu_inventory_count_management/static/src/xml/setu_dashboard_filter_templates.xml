@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="SetuDashboardFilter" owl="1">
+        <div class="setu-dashboard-filter card border-0 shadow-sm mb-3 rounded-3">
+            <div class="card-body py-3 px-3 bg-white">
+
+                <div class="filter-bar py-2 px-2">
+                    <div class="filter-group">
+                        <i class="fa fa-calendar"></i>
+                        <label for="datePresetFilter">Date</label>
+                        <select id="datePresetFilter"
+                                class="filter-select"
+                                t-att-value="state.datePreset"
+                                t-on-change="onDatePresetChange">
+                            <option value="all_time">All time</option>
+                            <option value="today">Today</option>
+                            <option value="this_week">This week</option>
+                            <option value="this_month">This month</option>
+                            <option value="last_month">Last month</option>
+                            <option value="this_year">This year</option>
+                            <option value="this_quarter">This quarter</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+
+                    <div t-if="state.datePreset === 'custom'" class="filter-group">
+                        <i class="fa fa-calendar"></i>
+                        <label for="customStartDate">From</label>
+                        <input type="date"
+                               id="customStartDate"
+                               class="filter-input date-input"
+                               t-att-value="state.customStartDate"
+                               t-on-change="onCustomStartChange"/>
+                    </div>
+
+                    <div t-if="state.datePreset === 'custom'" class="filter-group">
+                        <i class="fa fa-calendar"></i>
+                        <label for="customEndDate">To</label>
+                        <input type="date"
+                               id="customEndDate"
+                               class="filter-input date-input"
+                               t-att-value="state.customEndDate"
+                               t-on-change="onCustomEndChange"/>
+                    </div>
+
+                    <div class="filter-group">
+                        <i class="fa fa-warehouse"></i>
+                        <label for="warehouseFilter">Warehouse</label>
+                        <select id="warehouseFilter"
+                                class="filter-select"
+                                t-att-value="state.warehouseId"
+                                t-on-change="onWarehouseChange">
+                            <option value="">All</option>
+                            <t t-foreach="state.warehouses" t-as="wh" t-key="wh.id">
+                                <option t-att-value="wh.id" t-esc="wh.name"/>
+                            </t>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <i class="fa fa-users"></i>
+                        <label for="userFilter">User</label>
+                        <select id="userFilter"
+                                class="filter-select"
+                                t-att-value="state.userId"
+                                t-on-change="onUserChange">
+                            <option value="">All</option>
+                            <t t-foreach="state.users" t-as="usr" t-key="usr.id">
+                                <option t-att-value="usr.id" t-esc="usr.name"/>
+                            </t>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <i class="fa fa-list"></i>
+                        <label for="sessionFilter">Session</label>
+                        <select id="sessionFilter"
+                                class="filter-select"
+                                t-att-value="state.sessionId"
+                                t-on-change="onSessionChange">
+                            <option value="">All sessions</option>
+                            <t t-foreach="state.sessions" t-as="sess" t-key="sess.id">
+                                <option t-att-value="sess.id" t-esc="sess.name"/>
+                            </t>
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </t>
+</templates>

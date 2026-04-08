@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="setu_inventory_warning_message_wizard_form_view" model="ir.ui.view">
+            <field name="name">setu.inventory.warning.message.wizard.form.view</field>
+            <field name="model">setu.inventory.warning.message.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Warning!!!">
+                    <sheet>
+                        <field name="message" readonly="1" nolabel="1"/>
+                    </sheet>
+                    <footer>
+                        <button name="approve" class="oe_highlight" type="object" string="Confirm"/>
+                        <button special="cancel" string="Close"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="setu_inventory_warning_reject_message_wizard_form_view" model="ir.ui.view">
+            <field name="name">setu.inventory.warning.reject.message.wizard.form.view</field>
+            <field name="model">setu.inventory.warning.message.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Warning!!!">
+                    <sheet>
+                        <field name="message" readonly="1" nolabel="1"/>
+                    </sheet>
+                    <footer>
+                        <button name="reject" class="oe_highlight" type="object" string="Confirm"/>
+                        <button special="cancel" string="Close"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="setu_inventory_warning_approve_message_wizard_form_view" model="ir.ui.view">
+            <field name="name">setu.inventory.warning.approve.message.wizard.form.view</field>
+            <field name="model">setu.inventory.warning.message.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Warning!!!">
+                    <sheet>
+                        <field name="message" readonly="1" nolabel="1"/>
+                    </sheet>
+                    <footer>
+                        <button name="approve_count_lines" class="oe_highlight" type="object" string="Confirm"/>
+                        <button special="cancel" string="Close"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+
+        <record id="setu_inventory_count_warning_reject_message_wizard_form_view" model="ir.ui.view">
+            <field name="name">setu.inventory.count.warning.reject.message.wizard.form.view</field>
+            <field name="model">setu.inventory.warning.message.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Warning!!!">
+                    <sheet>
+                        <field name="message" readonly="1" nolabel="1"/>
+                    </sheet>
+                    <footer>
+                        <button name="reject_count_lines" class="oe_highlight" type="object" string="Confirm"/>
+                        <button special="cancel" string="Close"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="setu_inventory_count_validate_message_wizard_form_view" model="ir.ui.view">
+            <field name="name">setu.inventory.count.validate.message.wizard.form.view</field>
+            <field name="model">setu.inventory.warning.message.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Warning!!!">
+                    <sheet>
+                        <field name="message" readonly="1" nolabel="1"/>
+                    </sheet>
+                    <footer>
+                        <button name="validate_count" class="oe_highlight" type="object" string="Confirm"/>
+                        <button special="cancel" string="Close"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+
+    </data>
+</odoo>

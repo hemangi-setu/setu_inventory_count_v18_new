@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="res_config_settings_view_form" model="ir.ui.view">
+            <field name="name">res.config.settings.view.inventory.count</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+            <field name="priority" eval="50"/>
+            <field name="arch" type="xml">
+                <xpath expr="//form" position="inside">
+                    <app id="inventory_count" name="setu_inventory_count_management" string="Inventory Count">
+                        <block string="Inventory">
+                            <setting id="auto_inventory_adjustment_setting">
+                                <field name="auto_inventory_adjustment"/>
+                                <label for="auto_inventory_adjustment"/>
+                                <div class="text-muted">
+                                    By doing this while the user Validate the inventory, the stock will be automatically updated in real time.
+                                </div>
+                            </setting>
+                        </block>
+                    </app>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="setu_inventory_count_management_config_settings_action" model="ir.actions.act_window">
+            <field name="name">Settings</field>
+            <field name="res_model">res.config.settings</field>
+            <field name="view_mode">form</field>
+            <field name="context">{'module' : 'setu_inventory_count_management', 'bin_size': False}</field>
+        </record>
+
+        <menuitem sequence="1" name="Settings"
+                  id="inventory_count_settings_menu" parent="setu_inventory_count_management.main_configuration_menu"
+                  groups="setu_inventory_count_management.group_setu_inventory_count_manager"
+                  action="setu_inventory_count_management_config_settings_action"/>
+
+    </data>
+</odoo>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inventory Count Dashboard Client Action -->
+    <record id="action_inventory_dashboard" model="ir.actions.client">
+        <field name="name">Counting Operations</field>
+        <field name="tag">setu_inventory_dashboard</field>
+    </record>
+
+    <!-- Dashboard Parent Menu -->
+    <menuitem
+        name="Dashboards"
+        id="menu_setu_inventory_dashboards_root"
+        parent="setu_inventory_count_management.setu_inventory_count_root"
+        groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"
+        sequence="1"
+    />
+
+    <!-- Inventory Dashboard Menu -->
+    <menuitem
+        name="Counting Operations"
+        id="menu_counting_operation_dashboard"
+        action="setu_inventory_count_management.action_inventory_dashboard"
+        parent="setu_inventory_count_management.menu_setu_inventory_dashboards_root"
+        groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"
+        sequence="10"
+    />
+</odoo>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+        <record id="view_inventory_count_pivot_wizard" model="ir.ui.view">
+            <field name="name">inventory.count.pivot.wizard.form</field>
+            <field name="model">setu.inventory.count.pivot.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Inventory Count Report">
+                    <group>
+                        <group>
+                            <field name="start_date"/>
+                            <field name="location_ids" widget="many2many_tags"
+                                   domain="[('usage', '=', 'internal')]"/>
+                        </group>
+                        <group>
+                            <field name="end_date"/>
+                            <field name="approver_ids" widget="many2many_tags"/>
+                        </group>
+                    </group>
+                    <footer>
+                        <button name="action_generate_report" type="object" string="Generate" class="btn-primary"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_inventory_count_pivot_wizard" model="ir.actions.act_window">
+            <field name="name">Inventory Count Report</field>
+            <field name="res_model">setu.inventory.count.pivot.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <menuitem id="menu_inventory_count_pivot"
+                  name="Inventory Discrepancy Report"
+                  parent="setu_inventory_count_management.setu_inventory_reporting_menu"
+                  action="action_inventory_count_pivot_wizard"/>
+
+    </data>
+</odoo>

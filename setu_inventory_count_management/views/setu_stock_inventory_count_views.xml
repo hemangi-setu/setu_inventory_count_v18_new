@@ -1,0 +1,509 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="setu_stock_inventory_count_form_view" model="ir.ui.view">
+            <field name="name">setu_stock_inventory_count.form</field>
+            <field name="model">setu.stock.inventory.count</field>
+            <field name="arch" type="xml">
+                <form string="Inventory Count">
+                    <header>
+                        <field name="state" widget="statusbar" statusbar_visible="Draft,In Progress,To Be Approved"/>
+                        <field name="start_inventory_bool" invisible="1"/>
+                        <field name="create_session_bool" invisible="1"/>
+                        <field name="inventory_adj_ids" invisible="1"/>
+                        <field name="session_ids" invisible="1"/>
+                        <field name="all_count_lines_reviewed" invisible="1"/>
+                        <field name="id" invisible="1"/>
+                        <button name="action_generate_sessions"
+                                invisible="not create_session_bool"
+                                groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"
+                                type="object"
+                                string="Create Session"
+                                class="oe_highlight"/>
+                        <button name="approve_all_lines"
+                                type="object"
+                                string="Approve count Lines"
+                                groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"
+                                class="oe_highlight"
+                                invisible="approval_scope != 'count_level' or state != 'To Be Approved' or not line_ids"/>
+                        <button name="reject_all_lines"
+                                type="object"
+                                invisible="approval_scope != 'count_level' or state != 'To Be Approved' or not line_ids"
+                                string="Reject count Lines"
+                                groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"
+                                class="oe_highlight"/>
+                        <button name="action_open_count_validate_wizard"
+                                invisible="state != 'To Be Approved' or (approval_scope == 'count_level' and not all_count_lines_reviewed)"
+                                type="object"
+                                string="Validate"
+                                class="oe_highlight"
+                                groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"/>
+                        <button name="create_inventory_adj"
+                                invisible="adjustment_strategy != 'count_level' or not start_inventory_bool or state != 'Approved'"
+                                groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"
+                                type="object"
+                                string="Create Inventory"
+                                class="oe_highlight"/>
+                        <button name="action_create_re_count"
+                                invisible="not create_count_bool"
+                                groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"
+                                type="object"
+                                string="Create Re-Count"
+                                class="oe_highlight"/>
+                        <button name="complete_counting"
+                                invisible="state != 'In Progress'"
+                                groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"
+                                type="object"
+                                string="Complete Counting"
+                                class="oe_highlight"/>
+                        <button name="cancel"
+                                confirm="Are you sure you want to cancel the Inventory Count ?"
+                                invisible="state != 'Draft' or not id"
+                                groups="setu_inventory_count_management.group_setu_inventory_count_manager"
+                                type="object" string="Cancel" class="oe_highlight"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_open_user_mistake_lines"
+                                    groups="setu_inventory_count_management.group_setu_inventory_count_manager"
+                                    invisible="user_mistake_ratio &lt;= 0" type="object"
+                                    class="oe_stat_button">
+                                <field name="user_mistake_ratio" string="User Mistake" widget="percentpie"/>
+                            </button>
+                            <button name="action_open_discrepancy_lines"
+                                    groups="setu_inventory_count_management.group_setu_inventory_count_manager"
+                                    invisible="discrepancy_ratio &lt;= 0" type="object"
+                                    class="oe_stat_button">
+                                <field name="discrepancy_ratio" string="Discrepancy" widget="percentpie"/>
+                            </button>
+                            <button name="action_open_sessions" type="object" class="oe_stat_button"
+                                    icon="fa-pencil-square-o"
+                                    invisible="count_session_ids == 0">
+                                <field name="count_session_ids" widget="statinfo" string="Session"/>
+                            </button>
+                            <button name="action_open_counts" type="object" class="oe_stat_button"
+                                    groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"
+                                    icon="fa-rotate-left"
+                                    invisible="re_count_ids == 0">
+                                <field name="re_count_ids" widget="statinfo" string="Re-Count"/>
+                            </button>
+                            <button name="action_open_inventory_adj" type="object" string="Inventory Adjustment"
+                                    groups="setu_inventory_count_management.group_setu_inventory_count_approver,
+                                    setu_inventory_count_management.group_setu_inventory_count_manager"
+                                    class="oe_stat_button"
+                                    icon="fa-exchange"
+                                    invisible="not inventory_adj_ids">
+                            </button>
+                            <button name="check_unscanned"
+                                    invisible="adjustment_strategy != 'count_level' or state not in ('To Be Approved','Approved') or session_strategy == 'product_wise' or unscanned_product_lines_ids or inventory_adj_ids"
+                                    groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"
+                                    type="object" string="Check Unscanned" class="oe_highlight"/>
+                            <button name="action_open_unscanned_products" type="object" string="Unscanned Products"
+                                    groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"
+                                    class="oe_stat_button"
+                                    icon="fa-exchange"
+                                    invisible="session_strategy == 'product_wise' or not unscanned_product_lines_ids"
+                            >
+                            </button>
+                        </div>
+                        <div>
+                            <h1>
+                                <field name="name" readonly="1" nolabel="1"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group string="Count Setup">
+                                <field name="planner_id" invisible="not planner_id"/>
+                                <field name="inventory_count_date" readonly="state != 'Draft' or planner_id"/>
+                                <field name="approver_id" required="1" readonly="state != 'Draft' or planner_id"
+                                       options="{'no_create': True, 'no_open':True}"
+                                       domain="[('id','in',approver_ids)]"/>
+                            </group>
+                            <group string="Warehouse Scope">
+                                <field name="warehouse_id" required="1" readonly="state != 'Draft' or planner_id"
+                                       options="{'no_create': True, 'no_open':True}"/>
+                                <field name="company_id" readonly="1"
+                                       options="{'no_create': True, 'no_open':True}"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group string="Strategy">
+                                <field name="session_strategy" readonly="state != 'Draft' or planner_id" required="1"/>
+                                <field name="product_load_type" readonly="state != 'Draft' or planner_id" required="1"
+                                       invisible="session_strategy != 'location_wise'"/>
+                                <field name="product_load_type_product_wise" readonly="state != 'Draft' or planner_id"
+                                       required="1"
+                                       invisible="session_strategy != 'product_wise'"/>
+                                <field name="use_max_products" readonly="state != 'Draft' or planner_id"
+                                       widget="boolean_toggle"/>
+                                <field name="max_products_per_session" readonly="state != 'Draft' or planner_id"
+                                       required="use_max_products"
+                                       invisible="not use_max_products"/>
+                                <field name="use_barcode_scanner" widget="boolean_toggle"
+                                       readonly="state != 'Draft' or planner_id"/>
+                            </group>
+                            <group string="Approval">
+                                <field name="approval_scope" readonly="state != 'Draft' or planner_id"
+                                />
+                                <field name="adjustment_strategy"
+                                       readonly="state != 'Draft' or planner_id or approval_scope == 'count_level'"/>
+                                <field name="approver_ids" invisible="1"/>
+                                <field name="create_count_bool" invisible="1"/>
+                                <field name="unscanned_product_lines_ids" invisible="1"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Inventory Count Lines"
+                                  invisible="approval_scope != 'session_level' and not line_ids">
+                                <field name="line_ids">
+                                    <list decoration-danger="state == 'Reject' or is_system_generated"
+                                          decoration-info="unscanned_product_line_id != False" editable="bottom"
+                                          create="false" delete="false">
+                                        <field name="user_ids" widget="many2many_tags" readonly="1"
+                                        />
+                                        <field name="product_id" readonly="1"
+                                               options="{'no_create': True, 'no_open':True}"/>
+                                        <field name="location_id" readonly="1"
+                                               options="{'no_create': True, 'no_open':True}"/>
+                                        <field name="tracking" column_invisible="1"/>
+                                        <field name="unscanned_product_line_id" column_invisible="1"/>
+                                        <field name="serial_number_ids" widget="many2many_tags" readonly="1"/>
+                                        <field name="not_found_serial_number_ids" widget="many2many_tags" readonly="1"/>
+                                        <field name="lot_id" readonly="1"
+                                               options="{'no_create': True, 'no_open':True}"/>
+                                        <field name="theoretical_qty" string="Theoretical QTY"
+                                               column_invisible="parent.state != 'Draft'"
+                                               readonly="1"/>
+                                        <field name="qty_in_stock" string="Theoretical QTY" readonly="1"
+                                               column_invisible="parent.state == 'Draft'"/>
+                                        <field name="counted_qty"
+                                               readonly="parent.state != 'To Be Approved'"/>
+                                        <field name="is_discrepancy_found" readonly="1" string="Discrepancy"/>
+
+                                        <field name="difference_qty" readonly="1"/>
+                                        <field name="discrepancy_value" readonly="1"
+                                               groups="setu_inventory_count_management.group_setu_inventory_count_manager"/>
+                                        <field name="state"
+                                               column_invisible="parent.approval_scope != 'count_level' or parent.state not in ['To Be Approved', 'Approved'] or not parent.has_multi_session"
+                                               readonly="parent.state in ['Approved']"/>
+                                        <field name="is_system_generated" column_invisible="1"/>
+                                        <button string="Approve"
+                                                invisible="parent.approval_scope != 'count_level' or parent.state not in ['To Be Approved']"
+                                                style="font-size: 1rem; font-weight: bold;"
+                                                class="oe_highlight"
+                                                groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"
+                                                type="object"
+                                                name="change_line_state_to_approve"/>
+                                        <button string="Reject"
+                                                invisible="parent.approval_scope != 'count_level' or parent.state not in ['To Be Approved']"
+                                                class="oe_highlight"
+                                                style="background-color:red; font-size: 1rem; font-weight: bold;"
+                                                groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"
+                                                type="object"
+                                                name="change_line_state_to_reject"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Stock Move lines" invisible="not stock_move_line_ids">
+                                <field name="stock_move_line_ids" nolabel="1" readonly="1" options="{'no_open':True}"/>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <chatter/>
+
+                </form>
+            </field>
+        </record>
+
+        <record id="setu_stock_inventory_count_kanban_view" model="ir.ui.view">
+            <field name="name">setu.stock.inventory.count.kanban</field>
+            <field name="model">setu.stock.inventory.count</field>
+            <field name="arch" type="xml">
+                <kanban default_group_by="state" class="o_kanban_mobile setu_count_kanban_auto_width">
+                    <field name="name"/>
+                    <field name="state"/>
+                    <field name="warehouse_id"/>
+                    <field name="inventory_count_date"/>
+                    <field name="session_strategy"/>
+                    <field name="product_load_type"/>
+                    <field name="product_load_type_product_wise"/>
+                    <field name="approval_scope"/>
+                    <field name="count_session_ids"/>
+                    <field name="completed_session_count"/>
+                    <field name="session_progress_percent"/>
+                    <field name="discrepancy_ratio"/>
+                    <field name="total_discrepancy_value"/>
+                    <field name="currency_id"/>
+                    <field name="company_id"/>
+                    <field name="approver_id"/>
+                    <field name="inventory_adj_ids"/>
+                    <field name="unscanned_product_lines_ids"/>
+                    <field name="discrepancy_lines_count"/>
+                    <field name="re_count_ids"/>
+                    <field name="count_id"/>
+                    <field name="create_session_bool"/>
+                    <field name="start_inventory_bool"/>
+                    <templates>
+                        <t t-name="card">
+                            <t t-set="safe_progress" t-value="record.session_progress_percent.value || 0"/>
+                            <div class="oe_kanban_global_click o_kanban_record shadow-sm rounded-3 p-3"
+                                 t-att-style="'--card-color:' + ({'Draft':'#6b7280','In Progress':'#2563eb','To Be Approved':'#f59e0b','Approved':'#16a34a','Inventory Adjusted':'#0ea5e9','Cancel':'#dc2626'}[record.state.raw_value] || '#6b7280') + '; border:1px solid #e5e7eb; border-left:0; background: linear-gradient(360deg, var(--card-color), transparent 98%) left top / 5px 100% no-repeat, #ffffff;'">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div style="min-width:0;">
+                                        <div class="fw-bold fs-6 mb-1 text-nowrap"
+                                             style="overflow:hidden; text-overflow:ellipsis;">
+                                            <field name="name"/>
+                                        </div>
+                                        <div class="text-muted d-flex flex-column">
+                                            <span class="text-nowrap" style="overflow:hidden; text-overflow:ellipsis;">
+                                                <i class="fa fa-calendar me-1"/>
+                                                <field name="inventory_count_date"/>
+                                            </span>
+                                            <span class="text-nowrap" style="overflow:hidden; text-overflow:ellipsis;">
+                                                <i class="fa fa-building-o me-1"/>
+                                                <field name="company_id"/>
+                                            </span>
+                                            <span class="text-nowrap" style="overflow:hidden; text-overflow:ellipsis;">
+                                                <i class="fa fa-archive me-1"/>
+                                                <field name="warehouse_id"/>
+                                            </span>
+                                            <span class="text-nowrap" style="overflow:hidden; text-overflow:ellipsis;">
+                                                <i class="fa fa-user me-1"/>
+                                                Approver:
+                                                <field name="approver_id"/>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="text-end d-flex flex-column align-items-end gap-1">
+                                        <span class="badge rounded-pill text-bg-warning"
+                                              invisible="state != 'To Be Approved'">Waiting Approval
+                                        </span>
+                                        <span class="badge rounded-pill text-bg-secondary" invisible="state != 'Draft'">
+                                            Draft
+                                        </span>
+                                        <span class="badge rounded-pill text-bg-primary"
+                                              invisible="state != 'In Progress'">In Progress
+                                        </span>
+                                        <span class="badge rounded-pill text-bg-success"
+                                              invisible="state != 'Approved'">Approved
+                                        </span>
+                                        <span class="badge rounded-pill text-bg-info"
+                                              invisible="state != 'Inventory Adjusted'">Adjusted
+                                        </span>
+                                        <span class="badge rounded-pill text-bg-danger" invisible="state != 'Cancel'">
+                                            Cancelled
+                                        </span>
+                                        <span class="badge rounded-pill text-bg-secondary text-uppercase small mt-1"
+                                              invisible="not count_id"
+                                              title="Created from a parent inventory count after line rejections">
+                                            <i class="fa fa-repeat me-1"/>Re-count
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3 p-3 rounded-2" style="background: #f8fafc; border: 1px solid #e5e7eb;">
+                                    <div class="d-flex justify-content-between align-items-center fw-semibold py-1 border-bottom">
+                                        <span class="text-danger">
+                                            <i class="fa fa-arrow-down me-1"/>
+                                            Loss Value
+                                        </span>
+                                        <span class="text-danger fw-bold">
+                                            <field name="total_discrepancy_value" widget="monetary"
+                                                   options="{'currency_field': 'currency_id'}"/>
+                                        </span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center fw-semibold py-1">
+                                        <span class="text-warning">
+                                            <i class="fa fa-exclamation-triangle me-1"/>
+                                            Discrepancy Lines
+                                        </span>
+                                        <span class="text-warning fw-bold">
+                                            <field name="discrepancy_lines_count"/>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center fw-semibold mb-1">
+                                        <span>Session Progress</span>
+                                        <span>
+                                            <field name="completed_session_count"/>
+                                            /
+                                            <field name="count_session_ids"/>
+                                            (<t t-esc="Math.round(safe_progress)"/>%)
+                                        </span>
+                                    </div>
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar"
+                                             role="progressbar"
+                                             t-att-class="(record.state.raw_value === 'Approved' || record.state.raw_value === 'Inventory Adjusted') ? 'progress-bar bg-success' : (record.state.raw_value === 'In Progress' ? 'progress-bar bg-primary progress-bar-striped progress-bar-animated' : (record.state.raw_value === 'To Be Approved' ? 'progress-bar bg-warning' : (record.state.raw_value === 'Cancel' ? 'progress-bar bg-danger' : 'progress-bar bg-secondary')))"
+                                             t-att-style="'width:' + Math.round(safe_progress) + '%;'"></div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex flex-wrap gap-2 pt-2 border-top">
+                                    <button name="action_generate_sessions" type="object" string="Create Session"
+                                            class="btn btn-sm btn-success flex-fill"
+                                            groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"
+                                            invisible="not create_session_bool"/>
+                                    <button name="complete_counting" type="object" string="Complete Counting"
+                                            class="btn btn-sm btn-warning flex-fill"
+                                            groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"
+                                            invisible="state != 'In Progress'"/>
+                                    <button name="action_open_sessions" type="object" string="Sessions"
+                                            class="btn btn-sm btn-primary flex-fill"
+                                            invisible="count_session_ids == 0"/>
+                                    <button name="action_open_inventory_adj" type="object" string="Adjustments"
+                                            class="btn btn-sm btn-outline-info flex-fill"
+                                            invisible="state not in ['Approved', 'Inventory Adjusted'] or not inventory_adj_ids"/>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <record id="setu_stock_inventory_count_tree_view" model="ir.ui.view">
+            <field name="name">.setu_stock_inventory_count.tree</field>
+            <field name="model">setu.stock.inventory.count</field>
+            <field name="arch" type="xml">
+                <list string="Inventory Count" decoration-muted="state=='Cancel'" default_order="id desc">
+                    <field name="name"/>
+                    <field name="count_id" string="Re-count of" optional="hide"/>
+                    <field name="warehouse_id"/>
+                    <field name="session_strategy"/>
+                    <field name="product_load_type"/>
+                    <field name="approver_id"/>
+                    <field name="approval_scope"/>
+                    <field name="adjustment_strategy"/>
+                    <field name="inventory_count_date"/>
+                    <field name="state"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="setu_stock_inventory_count_line_tree_view" model="ir.ui.view">
+            <field name="name">.setu_stock_inventory_count.line.tree</field>
+            <field name="model">setu.stock.inventory.count.line</field>
+            <field name="arch" type="xml">
+                <list string="Inventory Count Lines" create="0" edit="0" delete="0">
+                    <field name="product_id"/>
+                    <field name="location_id"/>
+                    <field name="is_multi_session" column_invisible="True"/>
+                    <field name="qty_in_stock" string="Theoretical QTY"/>
+                    <field name="counted_qty"/>
+                    <field name="is_discrepancy_found" string="Discrepancy"/>
+                    <field name="user_calculation_mistake"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="setu_stock_inventory_count_line_form_view" model="ir.ui.view">
+            <field name="name">.setu_stock_inventory_count.line.form</field>
+            <field name="model">setu.stock.inventory.count.line</field>
+            <field name="arch" type="xml">
+                <form create="0" edit="0" delete="0">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="inventory_count_id"/>
+                                <field name="product_id"/>
+                                <field name="location_id"/>
+                                <field name="theoretical_qty"/>
+                                <field name="qty_in_stock"/>
+                                <field name="counted_qty"/>
+                                <field name="serial_number_ids" widget="many2many_tags"/>
+                                <field name="not_found_serial_number_ids" widget="many2many_tags"/>
+                                <field name="lot_id"/>
+                            </group>
+                            <group>
+                                <field name="tracking"/>
+                                <field name="is_discrepancy_found"/>
+                                <field name="is_multi_session"/>
+                                <field name="user_calculation_mistake"/>
+                                <field name="is_system_generated"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+
+        <record id="setu_stock_inventory_count_search_view" model="ir.ui.view">
+            <field name="name">setu_stock_inventory_count.search</field>
+            <field name="model">setu.stock.inventory.count</field>
+            <field name="arch" type="xml">
+                <search string="Inventory Count">
+                    <field name="name" string="Name"
+                           filter_domain="['|','|',('name','ilike',self),('warehouse_id','ilike',self)]"/>
+                    <field name="warehouse_id"/>
+                    <field name="approver_id"/>
+                    <field name="session_strategy"/>
+                    <field name="product_load_type"/>
+                    <field name="inventory_count_date"/>
+                    <filter string="Draft" name="Draft" domain="[('state', '=', 'Draft')]"/>
+                    <filter string="To Be Approved" name="To Be Approved"
+                            domain="[('state', '=', 'To Be Approved')]"/>
+                    <filter string="Approved" name="Approved" domain="[('state', '=', 'Approved')]"/>
+                    <filter string="Cancel" name="Cancel" domain="[('state', '=', 'Cancel')]"/>
+                    <filter string="Discrepancy" name="with_discrepancy" domain="[('discrepancy_ratio','>',0)]"/>
+                    <filter string="Inventory Adjusted"
+                            name="with_inventory_adj"
+                            domain="[('inventory_adj_ids', '!=', False)]"/>
+                    <separator/>
+                    <filter string="State" domain="[]" name="state" context="{'group_by':'state'}"/>
+                    <filter string="Warehouse" domain="[]" name="warehouse" context="{'group_by':'warehouse_id'}"/>
+                    <filter string="Approver" domain="[]" name="approver" context="{'group_by':'approver_id'}"/>
+                    <filter string="Session Strategy" domain="[]" name="session_strategy"
+                            context="{'group_by':'session_strategy'}"/>
+                    <filter string="Date" name="date" domain="[]" context="{'group_by': 'inventory_count_date'}"
+                            help="Date by Month"/>
+                </search>
+            </field>
+        </record>
+
+
+        <record id="setu_stock_inventory_count_act_window" model="ir.actions.act_window">
+            <field name="name">Inventory Counts</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">setu.stock.inventory.count</field>
+            <field name="view_mode">kanban,list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face" style="margin-top:250px;">
+                    There is no Inventory Count. Click here to add new Inventory Count.
+                </p>
+            </field>
+        </record>
+
+        <record id="new_inventory_count_act_window" model="ir.actions.act_window">
+            <field name="name">Inventory Counts</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">setu.stock.inventory.count</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face" style="margin-top:250px;">
+                    There is no Inventory Count.
+                </p>
+            </field>
+        </record>
+
+        <menuitem name="Inventory Counts"
+                  id="setu_inventory_count_root"
+                  web_icon="setu_inventory_count_management,static/description/icon.png"
+                  groups="setu_inventory_count_management.group_setu_inventory_count_user,setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"/>
+
+        <menuitem name="Documents"
+                  id="main_documents_menu"
+                  parent="setu_inventory_count_management.setu_inventory_count_root"
+                  groups="setu_inventory_count_management.group_setu_inventory_count_user,setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"/>
+
+        <menuitem name="Inventory Counts"
+                  id="setu_stock_inventory_count_menu"
+                  parent="setu_inventory_count_management.main_documents_menu"
+                  action="setu_stock_inventory_count_act_window"
+                  groups="setu_inventory_count_management.group_setu_inventory_count_approver,setu_inventory_count_management.group_setu_inventory_count_manager"
+                  sequence="0"/>
+    </data>
+</odoo>

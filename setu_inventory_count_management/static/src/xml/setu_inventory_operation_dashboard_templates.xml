@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="SetuInventoryOperationDashboard" owl="1">
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"/>
+
+        <div class="setu-inventory-operation-dashboard op-dashboard-container">
+            <div class="op-filter-sticky">
+                <SetuDashboardFilter onFiltersChange.bind="onFiltersChange"/>
+            </div>
+
+            <div class="kpi-section">
+                <div class="kpi-card kpi-1" t-on-click="() => this.openSessionKpiCard([['state', '=', 'Submitted']], 'Pending Approval Sessions')">
+                    <div class="kpi-icon">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <div class="kpi-value" t-esc="state.kpis.pendingApproval"/>
+                        <div class="kpi-label">Pending Approval</div>
+                    </div>
+                </div>
+
+                <div class="kpi-card kpi-2" t-on-click="() => this.openSessionKpiCard([['state', '=', 'In Progress']], 'Active Sessions')">
+                    <div class="kpi-icon">
+                        <i class="fas fa-play-circle"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <div class="kpi-value" t-esc="state.kpis.activeSessions"/>
+                        <div class="kpi-label">Active Sessions</div>
+                    </div>
+                </div>
+                
+                <div class="kpi-card kpi-3" t-on-click="() => this.openPendingReviewLinesKpiCard()">
+                    <div class="kpi-icon">
+                        <i class="fas fa-list-check"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <div class="kpi-value" t-esc="state.kpis.pendingReviewLines"/>
+                        <div class="kpi-label">Pending Review Lines</div>
+                    </div>
+                </div>
+
+                <div class="kpi-card kpi-4" t-on-click="() => this.openSessionKpiCard([['state', '!=', 'Cancel']], 'Sessions by Avg Session Time Filters')">
+                    <div class="kpi-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <div class="kpi-value" t-esc="state.kpis.avgSessionTime"/>
+                        <div class="kpi-label">Avg Session Time</div>
+                    </div>
+                </div>
+
+                <div class="kpi-card kpi-5" t-on-click="() => this.openSessionKpiCard([['is_revision', '=', true], ['state', '!=', 'Cancel']], 'Re-Sessions')">
+                    <div class="kpi-icon">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <div class="kpi-value" t-esc="state.kpis.reSessions"/>
+                        <div class="kpi-label">Re-Sessions</div>
+                    </div>
+                </div>
+
+                <div class="kpi-card kpi-6" t-on-click="() => this.openRejectedLinesKpiCard()">
+                    <div class="kpi-icon">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <div class="kpi-value" t-esc="state.kpis.rejectedLines"/>
+                        <div class="kpi-label">Rejected Lines</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Same row layout as SetuInventoryDashboard: User Accuracy vs Mistakes + High-Risk Products -->
+            <div class="charts-section">
+                <div class="chart-card">
+                    <div class="chart-header op-chart-header-center">
+                        <h3 class="chart-title">User Workloads</h3>
+                        <i class="fas fa-users op-chart-header-icon--users" title="User vs active sessions"/>
+                    </div>
+                    <div class="chart-container op-chart-container--user-workloads">
+                        <canvas id="chart_op_user_workloads"/>
+                    </div>
+                </div>
+
+                <div class="table-card wide">
+                    <div class="table-card-header">
+                        <h5 class="table-card-title">Pending Adjustments of Session</h5>
+                    </div>
+                    <div class="table-card-body">
+                        <div class="op-table-scroll"
+                             t-att-class="{'op-table-scroll--limited': state.pendingSessionAdjustments.length > 6}">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Session</th>
+                                    <th>Count</th>
+                                    <th>Discrepancy</th>
+                                    <th>Adjustment</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="state.pendingSessionAdjustments.length === 0">
+                                    <tr>
+                                        <td colspan="5" class="no-data" style="text-align: left;">
+                                            <i class="fas fa-inbox mr-2"/>No pending adjustments for the current filters.
+                                        </td>
+                                    </tr>
+                                </t>
+                                <tr t-foreach="state.pendingSessionAdjustments" t-as="row" t-key="row.id"
+                                    class="op-pending-adj-row"
+                                    t-on-click="() => this.openPendingAdjustment(row)">
+                                    <td t-esc="row.session_name"/>
+                                    <td>
+                                        <span class="status-warning status-badge" t-esc="row.line_count"/>
+                                    </td>
+                                    <td t-esc="row.discrepancy"/>
+                                    <td t-esc="row.adjustment_name"/>
+                                    <td>
+                                        <span class="status-badge status-pending" t-esc="row.status"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-section">
+                <div class="table-card wide">
+                    <div class="table-card-header">
+                        <h5 class="table-card-title">
+                            <i class="fas fa-barcode mr-2" title="Sessions with remaining scans or locations not visited"/>
+                            Unscanned Sessions
+                        </h5>
+                    </div>
+                    <div class="table-card-body">
+                        <div class="op-table-scroll"
+                             t-att-class="{'op-table-scroll--limited': state.unscannedSessions.length > 6}">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Session</th>
+                                    <th>User</th>
+                                    <th>Total products</th>
+                                    <th>Unscanned</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="state.unscannedSessions.length === 0">
+                                    <tr>
+                                        <td colspan="5" class="no-data" style="text-align: left;">
+                                            <i class="fas fa-inbox mr-2"/>No sessions with unscanned work for the current filters.
+                                        </td>
+                                    </tr>
+                                </t>
+                                <tr t-foreach="state.unscannedSessions" t-as="row" t-key="row.id"
+                                    class="op-unscanned-row"
+                                    t-on-click="() => this.openUnscannedSession(row)">
+                                    <td t-esc="row.session_name"/>
+                                    <td t-esc="row.user_names"/>
+                                    <td t-esc="row.total_products"/>
+                                    <td>
+                                        <span class="status-warning status-badge" t-esc="row.unscanned_count"/>
+                                    </td>
+                                    <td>
+                                        <button type="button"
+                                                class="btn btn-sm btn-primary op-check-unscanned"
+                                                t-on-click.stop="() => this.openUnscannedWizard(row)">
+                                            Check Unscanned
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header op-chart-header-center">
+                        <h3 class="chart-title">Rejection % by Location</h3>
+                        <i class="fas fa-map-marker-alt" style="color: #f97316;" title="Rejection rate by location"/>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart_op_rejection_location"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Same layout as User Workloads + Pending Adjustments: chart + wide table -->
+            <div class="charts-section">
+                <div class="chart-card">
+                    <div class="chart-header op-chart-header-center">
+                        <h3 class="chart-title">User Scanned vs Rejected</h3>
+                    </div>
+                    <div class="op-chart-legend op-chart-legend-center text-muted small">
+                        <span class="op-legend-item" title="Session lines scanned (non-rejected)">
+                            <span class="op-legend-swatch op-legend-scanned"/> Scanned Count
+                        </span>
+                        <span class="op-legend-item" title="Session lines in Reject state">
+                            <span class="op-legend-swatch op-legend-rejected"/> Rejected Count
+                        </span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart_op_user_scanned_rejected"/>
+                    </div>
+                </div>
+
+                <div class="table-card wide">
+                    <div class="table-card-header">
+                        <h5 class="table-card-title">
+                            <i class="fas fa-user-check mr-2" title="Who is doing what"/>
+                            Who is doing what
+                        </h5>
+                    </div>
+                    <div class="table-card-body">
+                        <div class="op-table-scroll"
+                             t-att-class="{'op-table-scroll--limited': state.managerActivity.length > 6}">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Session</th>
+                                    <th>Location</th>
+                                    <th>Last Scan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="state.managerActivity.length === 0">
+                                    <tr>
+                                        <td colspan="4" class="no-data" style="text-align: left;">
+                                            <i class="fas fa-inbox mr-2"/>No in-progress sessions for the current filters.
+                                        </td>
+                                    </tr>
+                                </t>
+                                <tr t-foreach="state.managerActivity" t-as="row" t-key="row.id"
+                                    class="op-manager-row"
+                                    t-on-click="() => this.openManagerSession(row)">
+                                    <td t-esc="row.user_names"/>
+                                    <td t-esc="row.session_name"/>
+                                    <td t-esc="row.location_name"/>
+                                    <td t-esc="row.last_scan_label"/>
+                                </tr>
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div t-if="state.isLoading" class="card border-0 bg-light mt-3">
+                <div class="card-body py-2 text-muted small">Refreshing dashboard...</div>
+            </div>
+        </div>
+    </t>
+</templates>

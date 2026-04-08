@@ -1,0 +1,125 @@
+.setu-dashboard-filter {
+    .filter-bar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        align-items: stretch;
+        gap: 12px;
+        margin-bottom: 0;
+        padding: 5px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e0e6ed;
+    }
+
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #f8fafc;
+        padding: 6px 8px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+        margin: 0;
+        min-height: 52px;
+        box-sizing: border-box;
+    }
+
+    .filter-group:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+    }
+
+    .filter-group i {
+        color: #64748b;
+        font-size: 14px;
+        width: 16px;
+    }
+
+    .filter-group label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #000;
+        white-space: nowrap;
+        margin: 0;
+    }
+
+    .filter-input,
+    .filter-select {
+        padding: 6px 8px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: white;
+        font-size: 0.8rem;
+        color: #334155;
+        min-width: 0;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .filter-input:focus,
+    .filter-select:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .filter-group .date-input {
+        cursor: pointer;
+    }
+
+    .filter-group .date-input::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        opacity: 0.7;
+        filter: invert(0.5);
+    }
+
+    .filter-group .date-input::-webkit-calendar-picker-indicator:hover {
+        opacity: 1;
+    }
+
+    .filter-select option {
+        background: white !important;
+        color: #334155 !important;
+        padding: 8px 12px !important;
+    }
+
+    .filter-select:focus option {
+        background: white !important;
+        color: #334155 !important;
+    }
+
+    .filter-select {
+        appearance: menulist !important;
+        -webkit-appearance: menulist !important;
+        -moz-appearance: menulist !important;
+    }
+
+    @media (max-width: 991.98px) {
+        .filter-bar {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .filter-bar {
+            grid-template-columns: 1fr;
+            gap: 6px;
+        }
+        .filter-group {
+            padding: 6px;
+            gap: 4px;
+            min-height: auto;
+            flex-wrap: wrap;
+        }
+        .filter-group label {
+            min-width: 72px;
+        }
+        .filter-input,
+        .filter-select {
+            min-width: 160px;
+        }
+    }
+}

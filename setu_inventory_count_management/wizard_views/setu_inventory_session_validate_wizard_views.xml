@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="setu_inventory_session_reject_resession_validate_form_view" model="ir.ui.view">
+            <field name="name">setu.inventory.session.reject.resession.validate.form.view</field>
+            <field name="model">setu.inventory.session.validate.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Inventory Count Session Validate">
+                    <sheet>
+                        <div>
+                            Rejected lines found. Create Re-Session to validate this session.
+                        </div>
+                    </sheet>
+                    <footer>
+                        <button string="Create Re-Session" type="object" name="create_re_session" class="oe_highlight"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="setu_inventory_session_reject_recount_validate_form_view" model="ir.ui.view">
+            <field name="name">setu.inventory.session.reject.recount.validate.form.view</field>
+            <field name="model">setu.inventory.session.validate.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Inventory Count Validate">
+                    <sheet>
+                        <div>
+                            Rejected lines found. Create Re-Count to validate this Count.
+                        </div>
+                        <div class="text-muted">
+                            Note : This Users will be assigned to the session of the Re-Count.
+                        </div>
+                        <group>
+                            <group>
+                                <field name="user_ids" widget="many2many_tags" required="1"
+                                       domain="[('share','=',False)]"
+                                       options="{'no_create': True, 'no_create_edit':True}"/>
+                            </group>
+                            <group/>
+                        </group>
+                    </sheet>
+                    <footer>
+                        <button string="Create Re-Count" type="object" name="create_re_count" class="oe_highlight"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="setu_inventory_session_resession_create_validate_form_view" model="ir.ui.view">
+            <field name="name">setu.inventory.session.resession.create.validate.form.view</field>
+            <field name="model">setu.inventory.session.validate.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Inventory Count Re-Session">
+                    <sheet>
+                        <field name="session_state" invisible="1"/>
+                        <div>
+                            Creating Re-Session will automatically <strong>Validate</strong> the current session. Click
+                            on <strong>Continue</strong> to Re-Create the session for rejected lines.
+                        </div>
+                        <div>
+                            Current Session is <strong>Validated</strong>. Click on <strong>Continue</strong> to
+                            Re-Create the session for rejected lines.
+                        </div>
+                    </sheet>
+                    <footer>
+                        <button string="Continue" type="object" name="continue_re_session" class="oe_highlight"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+    </data>
+</odoo>

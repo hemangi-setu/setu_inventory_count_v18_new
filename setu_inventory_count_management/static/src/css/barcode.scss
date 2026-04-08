@@ -1,0 +1,80 @@
+    .custom_o_stock_mobile_barcode_container{
+        position:  relative;
+        display: inline-block;
+        .custom_o_stock_mobile_barcode{
+            width: 100%;
+            bottom: 0px;
+            position: absolute;
+            opacity: 0.75;
+            font-size: 12px;
+            .o_mobile_barcode_camera{
+                margin: 5px;
+                font-size: 1.5em;
+            }
+        }
+    }
+
+ .custom_o_stock_barcode_container {
+        span.custom_o_stock_barcode_laser {
+            @include o-position-absolute(50%, -15px, auto, -15px);
+            height: 4px;
+            margin:0px auto !important;
+            width: 103% !important;
+            background: rgba(red, 0.6);
+            box-shadow: 0 1px 10px 1px rgba(red, 0.8);
+            animation: o_barcode_scanner_intro 3s cubic-bezier(0.6, -0.28, 0.735, 0.045) 7;
+        }
+
+    .img_barcode {
+
+
+        @include media-breakpoint-down(xxl) {
+            width: 178px;
+            height: 91px;
+        }
+
+
+    }
+    .o_stock_mobile_barcode {
+            height: 50px;
+    }
+}
+
+.setu_count_kanban_auto_width {
+    .o_kanban_renderer {
+        display: flex;
+        align-items: flex-start;
+        overflow-x: auto;
+    }
+
+    .o_kanban_renderer .o_kanban_group.flex-shrink-0.flex-grow-1 {
+        flex-grow: 0 !important;
+        flex-shrink: 0 !important;
+        flex-basis: auto !important;
+        width: auto !important;
+        min-width: max-content !important;
+    }
+
+    .o_kanban_renderer .o_kanban_group .o_kanban_record {
+        width: auto !important;
+        min-width: 340px !important;
+        max-width: none !important;
+    }
+}
+
+.setu_adj_card {
+    border: 1px solid #e5e7eb;
+}
+
+.setu_adj_loss_negative {
+    border-left: 5px solid #dc3545;
+}
+
+.setu_adj_loss_positive {
+    border-left: 5px solid #16a34a;
+}
+
+.setu_badge_in_progress {
+    background-color: #6f42c1;
+    color: #fff;
+}
