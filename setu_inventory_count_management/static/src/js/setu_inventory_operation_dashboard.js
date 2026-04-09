@@ -437,7 +437,7 @@ export class SetuInventoryOperationDashboard extends Component {
         this.state.isLoading = true;
         try {
             const data = await this.orm.call(
-                "setu.inventory.dashboard",
+                "setu.inventory.operation.dashboard",
                 "get_operation_dashboard_data",
                 [
                     payload.startDate || null,

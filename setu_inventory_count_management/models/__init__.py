@@ -14,3 +14,4 @@ from . import stock_location
 from . import stock_move
 from . import stock_move_line
 from . import setu_inventory_dashboard
+from . import setu_inventory_operation_dashboard
