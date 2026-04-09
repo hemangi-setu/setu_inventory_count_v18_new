@@ -105,26 +105,30 @@ class StockInvCountLine(models.Model):
         return result
 
     def _auto_mark_previous_rejected_count_mistakes(self):
-        for line in self.filtered(lambda rec: rec.inventory_count_id and rec.product_id):
+        valid_lines = self.filtered(lambda rec: rec.inventory_count_id and rec.product_id)
+        for line in valid_lines:
             count = line.inventory_count_id
             if count.approval_scope != 'count_level' or not count.count_id:
                 continue
+
             parent_count = count.count_id
-            previous_lines = parent_count.line_ids.filtered(
-                lambda prev: (
-                    prev.state == 'Reject'
-                    and prev.product_id == line.product_id
-                    and prev.location_id == line.location_id
-                    and (
-                        line.product_id.tracking == 'none'
-                        or (line.product_id.tracking == 'lot' and prev.lot_id == line.lot_id)
-                        or (
-                            line.product_id.tracking == 'serial'
-                            and bool(prev.serial_number_ids & line.serial_number_ids)
-                        )
-                    )
+            domain = [
+                ('state', '=', 'Reject'),
+                ('product_id', '=', line.product_id.id),
+                ('location_id', '=', line.location_id.id),
+                ('inventory_count_id', '=', parent_count.id),
+            ]
+
+            tracking = line.product_id.tracking
+            if tracking == 'lot':
+                domain.append(('lot_id', '=', line.lot_id.id))
+
+            previous_lines = self.env['setu.stock.inventory.count.line'].search(domain)
+            if tracking == 'serial':
+                previous_lines = previous_lines.filtered(
+                    lambda prev: prev.serial_number_ids & line.serial_number_ids
                 )
-            )
+
             for prev_line in previous_lines:
                 if prev_line.counted_qty != line.counted_qty:
                     prev_line.with_context(auto_user_mistake_update=True).write({

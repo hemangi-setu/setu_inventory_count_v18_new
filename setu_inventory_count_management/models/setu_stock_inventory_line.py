@@ -65,10 +65,9 @@ class StockInventoryLine(models.Model):
     @api.depends('product_qty', 'theoretical_qty')
     def _compute_difference(self):
         for line in self:
+            difference = line.product_qty - line.theoretical_qty
             if line.theoretical_qty < 0:
                 difference = line.product_qty
-            else:
-                difference = line.product_qty - line.theoretical_qty
             line.difference_qty = difference
 
     def _get_virtual_location(self):

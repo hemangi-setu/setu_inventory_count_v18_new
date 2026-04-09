@@ -16,7 +16,6 @@ class SetuCountWiseDiscrepancyReport(models.Model):
     company_id = fields.Many2one("res.company", string="Company", readonly=True)
 
 
-
     @api.model
     def _search(self, domain, offset=0, limit=None, order=None, **kwargs):
         domain = list(domain or [])

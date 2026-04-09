@@ -900,28 +900,27 @@ class SetuInventoryCountSession(models.Model):
         if moves:
             moves.write({'count_id': inventory_count.id})
 
-        count_line = self._get_or_create_count_line(line, count_line_map)
         self._validate_serial_duplicates(line, serial_index)
-        vals = self._prepare_count_line_vals(line, count_line, user_cmd, count_state)
 
-        if line.tracking == 'serial':
-            vals['serial_number_ids'] = [(6, 0, (count_line.serial_number_ids | line.serial_number_ids).ids)]
+        lot_id = line.lot_id.id if line.tracking == 'lot' else False
+        key = (line.product_id.id, line.location_id.id, lot_id)
+        count_line = count_line_map.get(key)
+        if not count_line:
+            count_line = self._create_count_line(line, count_line_map, key)
+        else:
+            vals = self._prepare_count_line_vals(line, count_line, user_cmd, count_state)
+            if line.tracking == 'serial':
+                vals['serial_number_ids'] = [(6, 0, (count_line.serial_number_ids | line.serial_number_ids).ids)]
+            count_line.write(vals)
 
-        count_line.write(vals)
         line.inventory_count_line_id = count_line.id
 
         if line.tracking == 'serial':
             self._handle_missing_serials(line, count_line, quant_map, not_found_serial_map)
 
-    def _get_or_create_count_line(self, line, count_line_map):
-        lot_id = line.lot_id.id if line.tracking == 'lot' else False
-        key = (line.product_id.id, line.location_id.id, lot_id)
-
-        count_line = count_line_map.get(key)
-        if not count_line:
-            count_line = self.create_new_count_line(line)
-            count_line_map[key] = count_line
-
+    def _create_count_line(self, line, count_line_map, key):
+        count_line = self.create_new_count_line(line)
+        count_line_map[key] = count_line
         return count_line
 
     def _validate_serial_duplicates(self, line, serial_index):
@@ -961,7 +960,6 @@ class SetuInventoryCountSession(models.Model):
             (line.product_id.id, line.location_id.id),
             self.env['stock.lot']
         )
-
         found = count_line.serial_number_ids
         missing = expected - found
 
