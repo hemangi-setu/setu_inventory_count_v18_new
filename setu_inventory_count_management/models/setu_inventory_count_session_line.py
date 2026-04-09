@@ -159,27 +159,15 @@ class InventoryCountSessionLine(models.Model):
         for line in self:
             domain = [('location_id', '=', line.location_id.id),
                       ('product_id', '=', line.product_id.id)]
+            line.theoretical_qty = 0
             if line.product_id and line.location_id:
                 if line.lot_id:
                     domain.append(('lot_id', '=', line.lot_id.id))
                 quants = self.env['stock.quant'].sudo().search(domain)
-                theoretical_qty = sum(x.quantity for x in quants)
-                line.theoretical_qty = theoretical_qty
-            else:
-                line.theoretical_qty = 0
+                line.theoretical_qty = sum(quants.mapped('quantity'))
 
     @api.onchange('product_id', 'lot_id', 'location_id', 'serial_number_ids')
     def _onchange_product_id(self):
-        if self.location_id:
-            allowed_location = self.session_id._get_allowed_locations_for_session()
-            if self.location_id.id not in allowed_location.ids:
-                if self.session_id.inventory_count_id.session_strategy == 'location_wise':
-                    raise UserError(_(
-                        '{} is not assigned to this session. Please select only assigned locations.'.format(
-                            self.location_id.display_name)))
-                raise UserError(_(
-                    '{} is not an internal location of this company. Please select an internal location.'.format(
-                        self.location_id.display_name)))
         self.scanned_qty = len(self.serial_number_ids)
         if not self.session_id or self.session_id.session_id or self.session_id.inventory_count_id.count_id:
             return
@@ -234,49 +222,40 @@ class InventoryCountSessionLine(models.Model):
                     domain.append(('quantity', '>', 0))
 
                 quants = self.env['stock.quant'].sudo().search(domain)
-
-                theoretical_qty = sum(x.quantity for x in quants)
-
+                theoretical_qty = sum(quants.mapped('quantity'))
                 return theoretical_qty
 
             else:
                 return 0
 
     def _get_counted_qty(self, line, count_line_exists_already=False):
-        if line.product_id.tracking == 'serial':
+        tracking = line.product_id.tracking
+        if tracking == 'serial':
             sessions = line.session_id.inventory_count_id.session_ids
-            serial_type_session_lines = sessions.session_line_ids.filtered(
-                lambda l: l.product_id.id == line.product_id.id and l.location_id.id == line.location_id.id)
-            serial_numbers = serial_type_session_lines.mapped('serial_number_ids').filtered(lambda s: s.product_qty < 1)
-            final_serial_numbers = serial_type_session_lines.mapped('serial_number_ids') - serial_numbers
-            return len(final_serial_numbers)
-        elif line.product_id.tracking == 'none':
-            existing_qty = count_line_exists_already.counted_qty if count_line_exists_already else 0.0
-            if line.session_id.session_id:
-                qty = line.scanned_qty
-            else:
-                qty = existing_qty + line.scanned_qty
 
-            moves = self.env['stock.move.line'].sudo().search([('state', '=', 'done'),
-                                                               ('product_id', '=', line.product_id.id),
-                                                               ('move_id.picking_type_id.code', '=', 'outgoing'),
-                                                               ('date', '>=', line.date_of_scanning)])
-            qty -= sum(x.qty_done for x in moves)
-            return qty
-        elif line.product_id.tracking == 'lot':
-            existing_qty = count_line_exists_already.counted_qty if count_line_exists_already else 0.0
-            if line.session_id.session_id:
-                qty = line.scanned_qty
-            else:
-                qty = existing_qty + line.scanned_qty
+            session_lines = sessions.session_line_ids.filtered(
+                lambda l: l.product_id.id == line.product_id.id
+                          and l.location_id.id == line.location_id.id
+            )
 
-            moves = self.env['stock.move.line'].sudo().search([('state', '=', 'done'),
-                                                               ('product_id', '=', line.product_id.id),
-                                                               ('move_id.picking_type_id.code', '=', 'outgoing'),
-                                                               ('lot_id', '=', line.lot_id.id),
-                                                               ('date', '>=', line.date_of_scanning)])
-            qty -= sum(x.qty_done for x in moves)
-            return qty
+            serials = session_lines.mapped('serial_number_ids')
+            valid_serials = serials.filtered(lambda s: s.product_qty >= 1)
+            return len(valid_serials)
+
+        existing_qty = count_line_exists_already.counted_qty if count_line_exists_already else 0.0
+        qty = line.scanned_qty if line.session_id.session_id else (existing_qty + line.scanned_qty)
+        domain = [
+            ('state', '=', 'done'),
+            ('product_id', '=', line.product_id.id),
+            ('move_id.picking_type_id.code', '=', 'outgoing'),
+            ('date', '>=', line.date_of_scanning),
+        ]
+        if tracking == 'lot':
+            domain.append(('lot_id', '=', line.lot_id.id))
+
+        moves = self.env['stock.move.line'].sudo().search(domain)
+        qty -= sum(moves.mapped('qty_done'))
+        return qty
 
     def _get_serial_number_ids(self, line):
         sessions = line.session_id.inventory_count_id.session_ids
@@ -303,24 +282,26 @@ class InventoryCountSessionLine(models.Model):
             count = line.inventory_count_id
             if count.approval_scope != 'session_level':
                 continue
+
             parent_session = line.session_id.revision_of_id
             if not parent_session:
                 continue
-            prev_lines = parent_session.session_line_ids.filtered(
-                lambda prev: (
-                    prev.state == 'Reject'
-                    and prev.product_id == line.product_id
-                    and prev.location_id == line.location_id
-                    and (
-                        line.product_id.tracking == 'none'
-                        or (line.product_id.tracking == 'lot' and prev.lot_id == line.lot_id)
-                        or (
-                            line.product_id.tracking == 'serial'
-                            and bool(prev.serial_number_ids & line.serial_number_ids)
-                        )
-                    )
-                )
-            )
+
+            domain = [
+                ('session_id', '=', parent_session.id),
+                ('state', '=', 'Reject'),
+                ('product_id', '=', line.product_id.id),
+                ('location_id', '=', line.location_id.id),
+            ]
+
+            if line.product_id.tracking == 'lot':
+                domain.append(('lot_id', '=', line.lot_id.id))
+            elif line.product_id.tracking == 'serial':
+                if line.serial_number_ids:
+                    domain.append(('serial_number_ids', 'in', line.serial_number_ids.ids))
+
+            prev_lines = self.env['setu.inventory.count.session.line'].search(domain)
+
             for prev_line in prev_lines:
                 if prev_line.scanned_qty != line.scanned_qty:
                     prev_line.with_context(auto_user_mistake_update=True).write({
@@ -330,10 +311,9 @@ class InventoryCountSessionLine(models.Model):
     @api.depends('scanned_qty', 'theoretical_qty')
     def _compute_difference(self):
         for line in self:
+            difference = line.scanned_qty - line.theoretical_qty
             if line.theoretical_qty < 0:
                 difference = line.scanned_qty
-            else:
-                difference = line.scanned_qty - line.theoretical_qty
             line.difference_qty = difference
 
     @api.depends('scanned_qty', 'theoretical_qty')

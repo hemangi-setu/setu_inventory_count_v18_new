@@ -182,7 +182,7 @@
                                                options="{'no_create': True, 'no_open':True}"
                                                readonly="parent.use_barcode_scanner"/>
                                         <field name="serial_number_ids" widget="many2many_tags" force_save="1"
-                                               domain="[('product_id', '=', product_id)]"
+                                               domain="[('product_id', '=', product_id), ('location_id', '=', location_id)]"
                                                options="{'no_create': True, 'no_open':True}"
                                                readonly="tracking != 'serial' or parent.use_barcode_scanner"
                                                required="tracking == 'serial'"/>
@@ -190,7 +190,7 @@
                                                readonly="1"/>
                                         <field name="lot_id" force_save="1"
                                                options="{'no_create': True, 'no_open':True}"
-                                               domain="[('product_id', '=', product_id)]"
+                                               domain="[('product_id', '=', product_id), ('location_id', '=', location_id)]"
                                                readonly="parent.use_barcode_scanner or tracking != 'lot'"
                                                required="tracking == 'lot'"/>
                                         <field name="is_multi_session" column_invisible="True"/>

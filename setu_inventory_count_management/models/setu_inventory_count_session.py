@@ -108,11 +108,15 @@ class SetuInventoryCountSession(models.Model):
     # Type field removed - use is_multi_session instead to determine session behavior
     approver_id = fields.Many2one(related="inventory_count_id.approver_id", string="Approver", store=True)
 
-    def _get_allowed_assignment_user_domain(self):
+    def get_inventory_user_group(self):
         inventory_user_group = self.env.ref(
             'setu_inventory_count_management.group_setu_inventory_count_user',
             raise_if_not_found=False,
         )
+        return inventory_user_group
+
+    def _get_allowed_assignment_user_domain(self):
+        inventory_user_group = self.get_inventory_user_group()
         domain = [('share', '=', False), ('company_ids', 'in', self.env.companies.ids)]
         if inventory_user_group:
             domain.append(('groups_id', 'in', [inventory_user_group.id]))
@@ -120,10 +124,7 @@ class SetuInventoryCountSession(models.Model):
 
     @api.constrains('user_ids')
     def _check_assigned_users_are_inventory_users(self):
-        inventory_user_group = self.env.ref(
-            'setu_inventory_count_management.group_setu_inventory_count_user',
-            raise_if_not_found=False,
-        )
+        inventory_user_group = self.get_inventory_user_group()
         if not inventory_user_group:
             return
         for rec in self:
@@ -153,28 +154,28 @@ class SetuInventoryCountSession(models.Model):
 
     def _get_allowed_locations_for_session(self):
         self.ensure_one()
-        strategy = self.inventory_count_id.session_strategy
+
         location_obj = self.env['stock.location'].sudo()
+        strategy = self.inventory_count_id.session_strategy
+
+        # Base domain (common for all cases)
+        domain = [
+            ('usage', '=', 'internal'),
+            ('company_id', '=', self.company_id.id),
+        ]
+
+        # Apply additional filters
         if strategy == 'product_wise':
-            return location_obj.search([
-                ('usage', '=', 'internal'),
-                ('company_id', '=', self.company_id.id),
-            ])
+            return location_obj.search(domain)
 
         if self.assigned_location_ids:
-            return location_obj.search([
-                ('id', 'child_of', self.assigned_location_ids.ids),
-                ('usage', '=', 'internal'),
-                ('company_id', '=', self.company_id.id),
-            ])
+            domain.append(('id', 'child_of', self.assigned_location_ids.ids))
+        elif self.location_id:
+            domain.append(('id', 'child_of', self.location_id.id))
+        else:
+            return location_obj.browse()
 
-        if self.location_id:
-            return location_obj.search([
-                ('id', 'child_of', self.location_id.id),
-                ('usage', '=', 'internal'),
-                ('company_id', '=', self.company_id.id),
-            ])
-        return location_obj.browse()
+        return location_obj.search(domain)
 
     def _is_allowed_scan_location(self, location):
         self.ensure_one()
@@ -185,21 +186,26 @@ class SetuInventoryCountSession(models.Model):
     def _check_product_session_limit(self, product):
         """Prevent scanning new products above configured session product limit."""
         self.ensure_one()
+
         if not product:
             return False
+
         count = self.inventory_count_id
         if not count.use_max_products or count.max_products_per_session <= 0:
             return False
-        existing_product_ids = set(self.session_line_ids.mapped('product_id').ids)
-        if product.id in existing_product_ids:
+
+        # Check if product already exists (no need to build full set)
+        if product in self.session_line_ids.mapped('product_id'):
             return False
-        if len(existing_product_ids) >= count.max_products_per_session:
+
+        # Check limit
+        if len(self.session_line_ids) >= count.max_products_per_session:
             return self.messege_return(
                 "Warning",
-                "You cannot scan more products in this session. Maximum allowed products per session is {}.".format(
-                    count.max_products_per_session
-                ),
+                f"You cannot scan more products in this session. "
+                f"Maximum allowed products per session is {count.max_products_per_session}.",
             )
+
         return False
 
     def on_barcode_scanned(self, barcode):
@@ -390,6 +396,7 @@ class SetuInventoryCountSession(models.Model):
             return self.messege_return("Notification",
                                        "Contact your approver to enable the barcode scanning for this session.")
 
+    @api.depends('user_ids')
     def _compute_user_ids_count(self):
         for rec in self:
             rec.user_ids_count = len(rec.user_ids)
@@ -529,6 +536,7 @@ class SetuInventoryCountSession(models.Model):
             return self.action_open_unscanned_products()
         return {'type': 'ir.actions.client', 'tag': 'reload'}
 
+
     def action_open_unscanned_products(self):
         self.ensure_one()
         view_id = self.sudo().env.ref('setu_inventory_count_management.setu_unscanned_product_lines')
@@ -610,162 +618,123 @@ class SetuInventoryCountSession(models.Model):
 
     def write(self, vals):
         """Override write to send notifications when users are assigned"""
-        if vals.get('name'):
-            raise ValidationError(_("You cannot change 'Name' of the Session"))
-        if vals.get('inventory_count_id'):
-            raise ValidationError(_("You cannot change the Reference Inventory Count of the Session"))
-
-        # Track user_ids before write
         user_ids_before = {}
         if 'user_ids' in vals:
-            for rec in self:
-                user_ids_before[rec.id] = rec.user_ids.ids
+            user_ids_before = {
+                rec.id: set(rec.user_ids.ids)
+                for rec in self
+            }
 
-        res = super(SetuInventoryCountSession, self).write(vals)
+        res = super().write(vals)
 
-        if 'user_ids' in vals:
-            for rec in self:
-                if not rec._should_send_session_assignment_notification():
-                    continue
-                before_ids = set(user_ids_before.get(rec.id, []))
-                after_ids = set(rec.user_ids.ids)
-                newly_assigned = after_ids - before_ids
-                if newly_assigned:
-                    rec._send_notification_to_users(newly_assigned)
+        if 'user_ids' not in vals:
+            return res
+
+        for rec in self:
+            if not rec._should_send_session_assignment_notification():
+                continue
+
+            before_ids = user_ids_before.get(rec.id, set())
+            after_ids = set(rec.user_ids.ids)
+            newly_assigned = after_ids - before_ids
+            if newly_assigned:
+                rec._send_notification_to_users(newly_assigned)
+
         return res
 
-    def _send_notification_to_users(self, user_ids=None):
-        """Notify assigned users: SMTP when they have an email, inbox when they use Odoo inbox."""
-        if not self._should_send_session_assignment_notification():
+    def _send_notification(self, users, template_xmlid=None, context_data=None, fallback_message=None):
+        """Generic method to send email + inbox notification."""
+        self.ensure_one()
+        if not users:
             return
 
-        users_to_notify = self.env['res.users'].browse(list(user_ids)) if user_ids else self.user_ids
-        if not users_to_notify:
-            return
+        template = self.env.ref(template_xmlid, raise_if_not_found=False) if template_xmlid else False
+        company = self.company_id.sudo()
+        mail_from = (
+                            getattr(company, 'email_formatted', None) or company.email or ''
+                    ).strip() or (
+                            self.env.user.partner_id.email or ''
+                    )
 
-        try:
-            template = self.env.ref(
-                'setu_inventory_count_management.mail_template_notify_users_session_assignment',
-                raise_if_not_found=False,
-            )
-            company = self.company_id.sudo()
-            mail_from = (
-                                getattr(company, 'email_formatted', None) or company.email or ''
-                        ).strip() or (
-                            self.inventory_count_id.create_uid.partner_id.email
-                            if self.inventory_count_id and self.inventory_count_id.create_uid
-                               and self.inventory_count_id.create_uid.partner_id
-                            else ''
-                        )
-            email_values_base = {}
-            if mail_from:
-                email_values_base['email_from'] = mail_from
-                email_values_base['reply_to'] = mail_from
+        email_base = {}
+        if mail_from:
+            email_base.update({
+                'email_from': mail_from,
+                'reply_to': mail_from,
+            })
 
-            for user in users_to_notify:
-                if not user.partner_id:
-                    continue
-                partner_email = (user.partner_id.email or '').strip()
-                emailed = False
-                if template and partner_email:
-                    template_sudo = template.sudo()
-                    mail_kw = {'email_to': partner_email}
-                    mail_kw.update(email_values_base)
-                    template_sudo.with_context(
-                        user_name=user.name,
-                        user_email=partner_email,
-                        lang=user.lang or user.partner_id.lang or self.env.lang,
+        for user in users:
+            partner = user.partner_id
+            if not partner:
+                continue
+
+            email = (partner.email or '').strip()
+            emailed = False
+
+            # ✅ Send Email
+            if template and email:
+                try:
+                    template.sudo().with_context(
+                        lang=user.lang or partner.lang or self.env.lang,
+                        **(context_data or {})
                     ).send_mail(
                         self.id,
                         force_send=True,
-                        email_values=mail_kw,
+                        email_values={
+                            'email_to': email,
+                            **email_base
+                        },
                     )
                     emailed = True
-                if user.notification_type == 'inbox':
+                except Exception:
+                    _logger.exception("Email sending failed for user %s", user.id)
+
+            # ✅ Inbox / fallback notification
+            if user.notification_type == 'inbox' or not emailed:
+                if fallback_message:
                     self.message_post(
-                        body=_("You have been assigned to Inventory Count Session '%s'.") % (self.display_name,),
+                        body=fallback_message,
+                        partner_ids=[partner.id],
                         message_type='notification',
-                        partner_ids=[user.partner_id.id],
                         subtype_xmlid='mail.mt_comment',
                     )
-                elif not emailed:
-                    self.message_post(
-                        body=_("You have been assigned to Inventory Count Session '%s'.") % (self.display_name,),
-                        message_type='notification',
-                        partner_ids=[user.partner_id.id],
-                        subtype_xmlid='mail.mt_comment',
-                    )
-        except Exception as e:
-            _logger.exception(
-                "Failed to send session assignment notification for session %s: %s",
-                self.display_name,
-                e,
-            )
+
+    def _send_notification_to_users(self, user_ids=None):
+        """Notify assigned users."""
+        if not self._should_send_session_assignment_notification():
+            return
+
+        users = self.env['res.users'].browse(user_ids) if user_ids else self.user_ids
+
+        message = _("You have been assigned to Inventory Count Session '%s'.") % self.display_name
+
+        self._send_notification(
+            users=users,
+            template_xmlid='setu_inventory_count_management.mail_template_notify_users_session_assignment',
+            context_data={
+                'user_name': False,  # handled per user via template
+            },
+            fallback_message=message,
+        )
 
     def _notify_approver_on_submit(self):
-        """Email approver when an inventory user submits a session."""
+        """Notify approver on submit."""
         self.ensure_one()
-        inventory_user_group = self.env.ref(
-            'setu_inventory_count_management.group_setu_inventory_count_user',
-            raise_if_not_found=False,
+
+        message = _(
+            "Approval request email sent to approver '%s' (%s)."
+        ) % (self.approver_id.display_name, self.approver_id.partner_id.email)
+
+        self._send_notification(
+            users=self.approver_id,
+            template_xmlid='setu_inventory_count_management.mail_template_notify_approver_session_submit',
+            context_data={
+                'submitter_name': self.env.user.name,
+                'submitter_email': self.env.user.partner_id.email,
+                'approver_name': self.approver_id.name,
+            },
+            fallback_message=message,
         )
-        if not inventory_user_group or inventory_user_group not in self.env.user.groups_id:
-            return
-        if not self.approver_id or not self.approver_id.partner_id:
-            self.message_post(
-                body=_("Session submitted, but no approver is configured to notify."),
-                message_type='comment',
-                subtype_xmlid='mail.mt_note',
-            )
-            return
-
-        approver_email = (self.approver_id.partner_id.email or '').strip()
-        if not approver_email:
-            return
-
-        template = self.env.ref(
-            'setu_inventory_count_management.mail_template_notify_approver_session_submit',
-            raise_if_not_found=False,
-        )
-        if not template:
-            return
-
-        try:
-            company = self.company_id.sudo()
-            mail_from = (
-                getattr(company, 'email_formatted', None) or company.email or ''
-            ).strip() or (
-                self.env.user.partner_id.email or ''
-            )
-            email_values = {'email_to': approver_email}
-            if mail_from:
-                email_values.update({
-                    'email_from': mail_from,
-                    'reply_to': mail_from,
-                })
-            template.sudo().with_context(
-                submitter_name=self.env.user.name,
-                submitter_email=self.env.user.partner_id.email,
-                approver_name=self.approver_id.name,
-                lang=self.approver_id.lang or self.approver_id.partner_id.lang or self.env.lang,
-            ).send_mail(
-                self.id,
-                force_send=True,
-                email_values=email_values,
-            )
-            self.message_post(
-                body=_(
-                    "Approval request email sent to approver '%s' (%s) on session submit."
-                ) % (self.approver_id.display_name, approver_email),
-                message_type='comment',
-                subtype_xmlid='mail.mt_note',
-            )
-        except Exception as e:
-            _logger.exception(
-                "Failed to send approver submit notification for session %s: %s",
-                self.display_name,
-                e,
-            )
 
     def start(self):
         if self.state == 'Cancel':
@@ -821,181 +790,191 @@ class SetuInventoryCountSession(models.Model):
         self.env['setu.inventory.session.details'].create({'session_id': self.id, 'start_date': date_today})
 
     def _merge_to_count_lines(self, from_session_approve=False):
-        """Optimized merge of session lines into inventory count lines."""
+        """Merge session lines into inventory count lines with serial handling."""
         self.ensure_one()
-
-        # -------------------------------------------------
-        # 1. Determine lines to merge
-        # -------------------------------------------------
-        if self.approval_scope == 'session_level':
-            if from_session_approve:
-                lines_to_merge = self.session_line_ids.filtered(
-                    lambda l: l.state == 'Approve'
-                )
-                count_line_state = 'Approve'
-            else:
-                lines_to_merge = self.session_line_ids.filtered(
-                    lambda l: l.state != 'Cancel'
-                )
-                count_line_state = 'Pending Review'
-        else:
-            lines_to_merge = self.session_line_ids.filtered(
-                lambda l: l.state != 'Cancel'
-            )
-            count_line_state = 'Pending Review'
-
-        if not lines_to_merge:
-            return
 
         inventory_count = self.inventory_count_id
 
-        # -------------------------------------------------
-        # 2. PRELOAD COUNT LINES (O(1) lookup)
-        # -------------------------------------------------
-        count_line_map = {}
-        for cl in inventory_count.line_ids:
-            key = (
-                cl.product_id.id,
-                cl.location_id.id,
-                cl.lot_id.id if cl.lot_id else False,
+        lines, count_state = self._get_lines_to_merge(from_session_approve)
+        if not lines:
+            return
+
+        count_line_map = self._prepare_count_line_map(inventory_count)
+        serial_index = self._build_serial_index(inventory_count)
+        moves_by_product = self._get_moves_by_product(lines)
+        quant_map = self._get_quant_map(lines)
+
+        not_found_serial_map = {}
+
+        for line in lines:
+            self._process_single_line(
+                line,
+                inventory_count,
+                count_line_map,
+                serial_index,
+                moves_by_product,
+                quant_map,
+                count_state,
+                not_found_serial_map,
             )
-            count_line_map[key] = cl
 
-        # -------------------------------------------------
-        # 3. PRELOAD SESSION LINES FOR SERIAL DUP CHECK
-        # -------------------------------------------------
-        session_lines_all = inventory_count.session_ids.mapped('session_line_ids')
+        self._apply_not_found_serials(inventory_count, not_found_serial_map)
 
+    def _get_lines_to_merge(self, from_session_approve):
+        if self.approval_scope == 'session_level' and from_session_approve:
+            lines = self.session_line_ids.filtered(lambda l: l.state == 'Approve')
+            return lines, 'Approve'
+        else:
+            lines = self.session_line_ids.filtered(lambda l: l.state != 'Cancel')
+            return lines, 'Pending Review'
+
+    def _prepare_count_line_map(self, inventory_count):
+        return {
+            (cl.product_id.id, cl.location_id.id, cl.lot_id.id or False): cl
+            for cl in inventory_count.line_ids
+        }
+
+    def _build_serial_index(self, inventory_count):
         serial_index = {}
-        for sl in session_lines_all.filtered(
-                lambda l: l.tracking == 'serial'
-                          and l.state != 'Reject'
-                          and l.session_id.state != 'Cancel'
-        ):
-            for serial in sl.serial_number_ids.ids:
-                serial_index.setdefault(serial, set()).add(sl.id)
+        all_lines = inventory_count.session_ids.mapped('session_line_ids')
 
-        # -------------------------------------------------
-        # 4. BATCH FETCH OUTGOING MOVES
-        # -------------------------------------------------
-        products = lines_to_merge.mapped('product_id').ids
-        earliest_date = min(lines_to_merge.mapped('date_of_scanning'))
+        for sl in all_lines:
+            if sl.tracking == 'serial' and sl.state != 'Reject' and sl.session_id.state != 'Cancel':
+                for serial_id in sl.serial_number_ids.ids:
+                    serial_index.setdefault(serial_id, set()).add(sl.id)
 
-        outgoing_moves = self.env['stock.move.line'].sudo().search([
+        return serial_index
+
+    def _get_moves_by_product(self, lines):
+        product_ids = lines.mapped('product_id').ids
+        earliest_date = min(lines.mapped('date_of_scanning'))
+
+        moves = self.env['stock.move.line'].sudo().search([
             ('state', '=', 'done'),
-            ('product_id', 'in', products),
+            ('product_id', 'in', product_ids),
             ('move_id.picking_type_id.code', '=', 'outgoing'),
             ('date', '>=', earliest_date),
         ])
 
         moves_by_product = {}
-        for mv in outgoing_moves:
+        for mv in moves:
             moves_by_product.setdefault(mv.product_id.id, self.env['stock.move.line'])
             moves_by_product[mv.product_id.id] |= mv
 
-        # -------------------------------------------------
-        # 5. PRELOAD QUANTS (for not-found serials)
-        # -------------------------------------------------
+        return moves_by_product
+
+    def _get_quant_map(self, lines):
         quant_map = {}
+
         quants = self.env['stock.quant'].sudo().search([
-            ('product_id', 'in', products),
-            ('location_id', 'in', lines_to_merge.mapped('location_id').ids),
+            ('product_id', 'in', lines.mapped('product_id').ids),
+            ('location_id', 'in', lines.mapped('location_id').ids),
             ('quantity', '=', 1),
         ])
 
         for q in quants:
-            key = (q.product_id.id, q.location_id.id)
-            quant_map.setdefault(key, self.env['stock.lot'])
-            quant_map[key] |= q.lot_id
+            if q.lot_id:
+                key = (q.product_id.id, q.location_id.id)
+                quant_map.setdefault(key, self.env['stock.lot'])
+                quant_map[key] |= q.lot_id
 
-        not_found_serial = {}
+        return quant_map
 
-        # -------------------------------------------------
-        # 6. MAIN LOOP (FAST — NO SEARCHES)
-        # -------------------------------------------------
-        for line in lines_to_merge:
+    def _process_single_line(
+            self,
+            line,
+            inventory_count,
+            count_line_map,
+            serial_index,
+            moves_by_product,
+            quant_map,
+            count_state,
+            not_found_serial_map,
+    ):
+        line.product_scanned = True
 
-            line.product_scanned = True
+        users = line.user_ids or line.session_id.user_ids
+        user_cmd = [(4, uid) for uid in users.ids] if users else []
 
-            responsible_users = line.user_ids or line.session_id.user_ids
-            user_write_commands = (
-                [(6, 0, responsible_users.ids)]
-                if responsible_users else [(5, 0, 0)]
-            )
+        moves = moves_by_product.get(line.product_id.id)
+        if moves:
+            moves.write({'count_id': inventory_count.id})
 
-            # ---------------------------------------------
-            # Link outgoing moves (NO SEARCH)
-            # ---------------------------------------------
-            moves = moves_by_product.get(line.product_id.id)
-            if moves:
-                moves.write({'count_id': inventory_count.id})
+        count_line = self._get_or_create_count_line(line, count_line_map)
+        self._validate_serial_duplicates(line, serial_index)
+        vals = self._prepare_count_line_vals(line, count_line, user_cmd, count_state)
 
-            lot_id = line.lot_id.id if line.tracking == 'lot' else False
-            key = (line.product_id.id, line.location_id.id, lot_id)
+        if line.tracking == 'serial':
+            vals['serial_number_ids'] = [(6, 0, (count_line.serial_number_ids | line.serial_number_ids).ids)]
 
-            count_line = count_line_map.get(key)
+        count_line.write(vals)
+        line.inventory_count_line_id = count_line.id
 
-            # ---------------------------------------------
-            # SERIAL VALIDATION (O(1))
-            # ---------------------------------------------
-            if line.tracking == 'serial':
-                duplicates = [
-                    s for s in line.serial_number_ids.ids
-                    if len(serial_index.get(s, [])) > 1
-                ]
-                if duplicates:
-                    lots = self.env['stock.lot'].browse(duplicates)
-                    raise UserError(_(
-                        'Serial Number "%s" is scanned multiple times for this Count.'
-                    ) % ", ".join(lots.mapped('name')))
+        if line.tracking == 'serial':
+            self._handle_missing_serials(line, count_line, quant_map, not_found_serial_map)
 
-            # ---------------------------------------------
-            # CREATE / UPDATE COUNT LINE
-            # ---------------------------------------------
-            vals = {
-                'theoretical_qty': line._get_theoretical_qty(count_line),
-                'qty_in_stock': line._get_theoretical_qty(count_line),
-                'counted_qty': (
-                    line.scanned_qty
-                    if self.session_id
-                    else line._get_counted_qty(line, count_line)
-                ),
-                'user_ids': user_write_commands,
-                'state': count_line_state,
-            }
+    def _get_or_create_count_line(self, line, count_line_map):
+        lot_id = line.lot_id.id if line.tracking == 'lot' else False
+        key = (line.product_id.id, line.location_id.id, lot_id)
 
-            if count_line:
-                count_line.write(vals)
-            else:
-                count_line = self.create_new_count_line(line)
-                count_line.write(vals)
-                count_line_map[key] = count_line
+        count_line = count_line_map.get(key)
+        if not count_line:
+            count_line = self.create_new_count_line(line)
+            count_line_map[key] = count_line
 
-            line.inventory_count_line_id = count_line.id
+        return count_line
 
-            # ---------------------------------------------
-            # NOT FOUND SERIALS
-            # ---------------------------------------------
-            if line.tracking == 'serial':
-                total_lots = quant_map.get(
-                    (line.product_id.id, line.location_id.id),
-                    self.env['stock.lot']
-                )
+    def _validate_serial_duplicates(self, line, serial_index):
+        if line.tracking != 'serial':
+            return
 
-                found_lots = (
-                        count_line.serial_number_ids | line.serial_number_ids
-                )
+        duplicate_ids = [
+            s for s in line.serial_number_ids.ids
+            if len(serial_index.get(s, [])) > 1
+        ]
 
-                missing = total_lots - found_lots
-                if missing:
-                    not_found_serial[(line.product_id, line.location_id)] = missing
+        if duplicate_ids:
+            lots = self.env['stock.lot'].browse(duplicate_ids)
+            raise UserError(_(
+                'Serial Number "%s" is scanned multiple times.'
+            ) % ", ".join(lots.mapped('name')))
 
-        # -------------------------------------------------
-        # 7. APPLY NOT FOUND SERIALS
-        # -------------------------------------------------
-        for (prod, loc), lots in not_found_serial.items():
+    def _prepare_count_line_vals(self, line, count_line, user_cmd, count_state):
+        theoretical_qty = line._get_theoretical_qty(count_line)
+
+        counted_qty = (
+            line.scanned_qty
+            if self.session_id
+            else line._get_counted_qty(line, count_line)
+        )
+
+        return {
+            'theoretical_qty': theoretical_qty,
+            'qty_in_stock': theoretical_qty,
+            'counted_qty': counted_qty,
+            'user_ids': user_cmd,
+            'state': count_state,
+        }
+
+    def _handle_missing_serials(self, line, count_line, quant_map, not_found_serial_map):
+        expected = quant_map.get(
+            (line.product_id.id, line.location_id.id),
+            self.env['stock.lot']
+        )
+
+        found = count_line.serial_number_ids
+        missing = expected - found
+
+        if missing:
+            key = (line.product_id.id, line.location_id.id)
+            not_found_serial_map[key] = missing
+        else:
+            count_line.write({'not_found_serial_number_ids': [(5, 0, 0)]})
+
+    def _apply_not_found_serials(self, inventory_count, not_found_serial_map):
+        for (prod_id, loc_id), lots in not_found_serial_map.items():
             cl = inventory_count.line_ids.filtered(
-                lambda l: l.product_id == prod and l.location_id == loc
+                lambda l: l.product_id.id == prod_id and l.location_id.id == loc_id
             )
             if cl:
                 cl.write({
@@ -1166,131 +1145,135 @@ class SetuInventoryCountSession(models.Model):
             if count_line and line.is_system_generated and not self.is_multi_session:
                 count_line.counted_qty = line.scanned_qty
         self.state = 'Done'
+
         if self.approval_scope != 'session_level':
-            rejected_lines = self.session_line_ids.filtered(lambda line: line.state == 'Reject')
-            for line in rejected_lines:
-                if line.product_id.tracking == 'lot':
-                    self.env['setu.stock.inventory.count.line'].search(
-                        [('inventory_count_id', '=', self.inventory_count_id.id),
-                         ('product_id', '=', line.product_id.id),
-                         ('location_id', '=', line.location_id.id), ('lot_id', '=', line.lot_id.id)
-                         ]).unlink()
-                else:
-                    self.env['setu.stock.inventory.count.line'].search(
-                        [('inventory_count_id', '=', self.inventory_count_id.id),
-                         ('product_id', '=', line.product_id.id),
-                         ('location_id', '=', line.location_id.id)
-                         ]).unlink()
+            self._remove_rejected_count_lines()
+
+    def _remove_rejected_count_lines(self):
+        rejected_lines = self.session_line_ids.filtered(lambda l: l.state == 'Reject')
+        count_line_obj = self.env['setu.stock.inventory.count.line']
+        for line in rejected_lines:
+            domain = [
+                ('inventory_count_id', '=', self.inventory_count_id.id),
+                ('product_id', '=', line.product_id.id),
+                ('location_id', '=', line.location_id.id),
+            ]
+            if line.product_id.tracking == 'lot':
+                domain.append(('lot_id', '=', line.lot_id.id))
+            count_line_obj.search(domain).unlink()
 
     def validate_session(self):
+        """Validate session with optimized classification and serial handling."""
         self.ensure_one()
         self._check_user_is_configured_approver()
 
-        session_lines = self.session_line_ids
-
-        # -------------------------------------------------
-        # 1. SINGLE PASS CLASSIFICATION (instead of filtered x3)
-        # -------------------------------------------------
-        pending_review = []
-        system_generated_lines = []
-        rejected_lines = []
-
-        for line in session_lines:
-            if line.state == 'Pending Review':
-                pending_review.append(line)
-            elif line.state == 'Approve' and line.is_system_generated:
-                system_generated_lines.append(line)
-            elif line.state == 'Reject':
-                rejected_lines.append(line)
-
-        # -------------------------------------------------
-        # 2. Pending Review Validation
-        # -------------------------------------------------
-        if pending_review:
+        pending_lines, system_lines, rejected_lines = self._classify_session_lines()
+        if pending_lines:
             raise ValidationError(_(
                 'There are some lines with Pending Review. '
-                'Please check and set the state in all session lines '
-                'of this session to validate this session.'
+                'Please review all lines before validating the session.'
             ))
 
+        count_line_map = self._prepare_system_generated_map()
+        self._apply_system_generated_lines(system_lines, count_line_map)
+        action = self._handle_rejected_lines(rejected_lines)
+        if action:
+            return action
+
+        self._finalize_validation(rejected_lines)
+
+    # -------------------------------------------------
+    # 1. CLASSIFY LINES
+    # -------------------------------------------------
+    def _classify_session_lines(self):
+        pending_lines = []
+        system_lines = []
+        rejected_lines = []
+
+        for line in self.session_line_ids:
+            state = line.state
+
+            if state == 'Pending Review':
+                pending_lines.append(line)
+            elif state == 'Approve' and line.is_system_generated:
+                system_lines.append(line)
+            elif state == 'Reject':
+                rejected_lines.append(line)
+        return pending_lines, system_lines, rejected_lines
+
+
+    def _prepare_system_generated_map(self):
         inventory_count = self.inventory_count_id
-
-        # -------------------------------------------------
-        # 3. PRELOAD COUNT LINES (O(1) lookup)
-        # -------------------------------------------------
-        count_line_map = {}
-
-        for cl in inventory_count.line_ids.filtered('is_system_generated'):
-            key = (
+        return {
+            (
                 cl.product_id.id,
                 cl.location_id.id,
-                cl.lot_id.id if cl.lot_id else False,
-            )
-            count_line_map[key] = cl
+                cl.lot_id.id or False
+            ): cl
+            for cl in inventory_count.line_ids
+            if cl.is_system_generated
+        }
 
-        # -------------------------------------------------
-        # 4. HANDLE SYSTEM GENERATED LINES
-        # -------------------------------------------------
-        for sg_line in system_generated_lines:
-
+    def _apply_system_generated_lines(self, system_lines, count_line_map):
+        for line in system_lines:
             key = (
-                sg_line.product_id.id,
-                sg_line.location_id.id,
-                sg_line.lot_id.id if sg_line.lot_id else False,
+                line.product_id.id,
+                line.location_id.id,
+                line.lot_id.id or False
             )
-
             count_line = count_line_map.get(key)
             if not count_line:
                 continue
 
-            # direct assignment faster than write()
-            count_line.counted_qty = sg_line.scanned_qty
-
-            # SERIAL handling (optimized)
+            # direct assignment (faster than write)
+            count_line.counted_qty = line.scanned_qty
             if count_line.product_id.tracking == 'serial':
-                merged_serials = set(count_line.serial_number_ids.ids)
-                merged_serials.update(sg_line.serial_number_ids.ids)
+                self._merge_serials(count_line, line)
 
-                remaining_not_found = (
-                        set(count_line.not_found_serial_number_ids.ids)
-                        - set(sg_line.serial_number_ids.ids)
-                )
+    def _merge_serials(self, count_line, session_line):
+        existing_serials = set(count_line.serial_number_ids.ids)
+        new_serials = set(session_line.serial_number_ids.ids)
 
-                count_line.write({
-                    'serial_number_ids': [(6, 0, list(merged_serials))],
-                    'not_found_serial_number_ids': [(6, 0, list(remaining_not_found))],
-                })
+        merged_serials = list(existing_serials | new_serials)
+        remaining_not_found = list(
+            set(count_line.not_found_serial_number_ids.ids) - new_serials
+        )
 
-        # -------------------------------------------------
-        # 5. HANDLE REJECTED LINES
-        # -------------------------------------------------
-        if rejected_lines and self.re_open_session_bool and self.approval_scope != 'session_level':
+        count_line.write({
+            'serial_number_ids': [(6, 0, merged_serials)],
+            'not_found_serial_number_ids': [(6, 0, remaining_not_found)],
+        })
+
+    def _handle_rejected_lines(self, rejected_lines):
+        if (
+                rejected_lines
+                and self.re_open_session_bool
+                and self.approval_scope != 'session_level'
+        ):
+            env = self.sudo().env
             return {
                 'name': 'Rejected Lines Found!!!',
+                'type': 'ir.actions.act_window',
+                'res_model': 'setu.inventory.session.validate.wizard',
                 'view_mode': 'form',
-                'view_id': self.sudo().env.ref(
+                'view_id': env.ref(
                     'setu_inventory_count_management.'
                     'setu_inventory_session_reject_resession_validate_form_view'
                 ).id,
-                'res_model': 'setu.inventory.session.validate.wizard',
-                'type': 'ir.actions.act_window',
-                'target': 'new'
+                'target': 'new',
             }
+        return False
 
-        # -------------------------------------------------
-        # 6. FINAL VALIDATION FLOW
-        # -------------------------------------------------
+    def _finalize_validation(self, rejected_lines):
+        inventory_count = self.inventory_count_id
         self._validate_session()
 
         if self.approval_scope == 'session_level':
-            # For session-level approval, add only approved lines to the count after session validation succeeds.
             self._merge_to_count_lines(from_session_approve=True)
             if rejected_lines:
                 inventory_count.action_reject(session=self)
 
-        # reflect validated session at count level
         inventory_count.action_approve(session=self)
-
 
     def _create_count_line_from_session_line(self, session_line):
         """Create a count line from session line for multi-session"""
@@ -1306,7 +1289,6 @@ class SetuInventoryCountSession(models.Model):
             'not_found_serial_number_ids': [(6, 0, session_line.not_found_serial_number_ids.ids)],
             'is_system_generated': session_line.is_system_generated,
         }
-
         return self.env['setu.stock.inventory.count.line'].create(count_line_vals)
 
     def reject_all_lines(self):
