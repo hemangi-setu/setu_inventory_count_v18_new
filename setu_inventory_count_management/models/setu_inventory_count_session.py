@@ -907,6 +907,7 @@ class SetuInventoryCountSession(models.Model):
         count_line = count_line_map.get(key)
         if not count_line:
             count_line = self._create_count_line(line, count_line_map, key)
+            count_line.state = count_state
         else:
             vals = self._prepare_count_line_vals(line, count_line, user_cmd, count_state)
             if line.tracking == 'serial':

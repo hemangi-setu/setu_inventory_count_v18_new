@@ -261,7 +261,7 @@ class SetuInventoryOperationDashboard(models.AbstractModel):
             if not line.location_id:
                 continue
             location_id = line.location_id.id
-            is_scanned = bool(line.scanned_qty > 0)
+            is_scanned = bool(line.scanned_qty >= 0)
             if is_scanned:
                 loc_scanned[location_id] += 1
             if line.state == 'Reject':
@@ -281,7 +281,7 @@ class SetuInventoryOperationDashboard(models.AbstractModel):
             rejected = loc_rejected.get(lid, 0)
             if not scanned:
                 continue
-            pct = min(100.0, round((rejected / (scanned + rejected)) * 100.0, 2))
+            pct = min(100.0, round((rejected / (scanned)) * 100.0, 2))
             loc_name = id_to_loc[lid].display_name if lid in id_to_loc else str(lid)
             if rejected > 0:
                 pairs.append((loc_name, pct, lid))
