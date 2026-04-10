@@ -980,6 +980,35 @@ class SetuInventoryCountSession(models.Model):
                     'not_found_serial_number_ids': [(6, 0, lots.ids)]
                 })
 
+    def _set_session_line_not_found_serials(self):
+        self.ensure_one()
+        serial_lines = self.session_line_ids.filtered(
+            lambda l: l.product_id
+            and l.location_id
+            and l.product_id.tracking == 'serial'
+        )
+        if not serial_lines:
+            return
+
+        product_ids = serial_lines.mapped('product_id').ids
+        location_ids = serial_lines.mapped('location_id').ids
+        quants = self.env['stock.quant'].sudo().search([
+            ('product_id', 'in', product_ids),
+            ('location_id', 'in', location_ids),
+            ('quantity', '>', 0),
+            ('lot_id', '!=', False),
+        ])
+        expected_map = {}
+        empty_lots = self.env['stock.lot']
+        for quant in quants:
+            key = (quant.product_id.id, quant.location_id.id)
+            expected_map[key] = expected_map.get(key, empty_lots) | quant.lot_id
+
+        for line in serial_lines:
+            expected_lots = expected_map.get((line.product_id.id, line.location_id.id), empty_lots)
+            not_found_lots = expected_lots - line.serial_number_ids
+            line.write({'not_found_serial_number_ids': [(6, 0, not_found_lots.ids)]})
+
     def submit(self):
         if self.current_state in ['End']:
             return {'type': 'ir.actions.client', 'tag': 'reload'}
@@ -993,6 +1022,7 @@ class SetuInventoryCountSession(models.Model):
         self.current_scanning_location_id = False
         self.current_scanning_product_id = False
         self.current_scanning_lot_id = False
+        self._set_session_line_not_found_serials()
         self.session_submit_date = date_now
         self.state = 'Submitted'
         self._notify_approver_on_submit()

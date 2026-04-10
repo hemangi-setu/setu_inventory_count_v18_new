@@ -872,14 +872,20 @@ class StockInvCount(models.Model):
 
         # Determine which lines to adjust
         if session:
-            # Only adjust lines corresponding to this session's approved lines
-            approved_session_lines = session.session_line_ids.filtered(lambda sl: sl.state == 'Approve')
-            products = approved_session_lines.mapped('product_id')
-            locations = approved_session_lines.mapped('location_id')
-            lines_to_adjust = self.line_ids.filtered(
-                lambda l: l.state == 'Approve' and l.is_discrepancy_found
-                          and l.product_id in products and l.location_id in locations
-            )
+            if self.adjustment_strategy == 'session_level':
+                # For session-level strategy, create adjustment lines directly from session lines.
+                lines_to_adjust = session.session_line_ids.filtered(
+                    lambda sl: sl.state == 'Approve' and sl.is_discrepancy_found
+                )
+            else:
+                # Fallback for count-level strategy: map approved session lines to count lines.
+                approved_session_lines = session.session_line_ids.filtered(lambda sl: sl.state == 'Approve')
+                products = approved_session_lines.mapped('product_id')
+                locations = approved_session_lines.mapped('location_id')
+                lines_to_adjust = self.line_ids.filtered(
+                    lambda l: l.state == 'Approve' and l.is_discrepancy_found
+                              and l.product_id in products and l.location_id in locations
+                )
         else:
             # Adjust all approved lines with discrepancies
             lines_to_adjust = self.line_ids.filtered(lambda l: l.state == 'Approve' and l.is_discrepancy_found)
@@ -927,12 +933,14 @@ class StockInvCount(models.Model):
                 )
             lines = []
             for l in count_lines:
+                counted_qty = l.scanned_qty if l._name == 'setu.inventory.count.session.line' else l.counted_qty
+                theoretical_qty = l.theoretical_qty if l._name == 'setu.inventory.count.session.line' else l.qty_in_stock
                 if l.product_id.tracking != 'serial':
                     lines.append((
                         0, 0, {'product_id': l.product_id.id, 'product_uom_id': l.product_id.uom_id.id,
-                               'location_id': l.location_id.id, 'product_qty': l.counted_qty,
+                               'location_id': l.location_id.id, 'product_qty': counted_qty,
                                'prod_lot_id': l.lot_id.id if l.lot_id else False,
-                               'theoretical_qty': l.qty_in_stock}))
+                               'theoretical_qty': theoretical_qty}))
                 else:
                     if l.serial_number_ids:
                         quants = self.env['stock.quant'].sudo().search([
