@@ -80,7 +80,9 @@
         <field name="name">Inventory Count: approver scope</field>
         <field name="model_id" ref="model_setu_stock_inventory_count"/>
         <field name="groups" eval="[(4, ref('setu_inventory_count_management.group_setu_inventory_count_approver'))]"/>
-        <field name="domain_force">['|', ('approver_id', '=', False), ('approver_id', '=', user.id)]</field>
+        <field name="domain_force">['|', '|', ('approver_id', '=', False), ('approver_id', '=', user.id),
+            ('session_ids.user_ids', 'in', [user.id])]
+        </field>
     </record>
     <record id="ir_rule_setu_stock_inventory_count_manager_scope" model="ir.rule">
         <field name="name">Inventory Count: manager full access</field>
@@ -93,8 +95,8 @@
         <field name="name">Inventory Count Line: approver scope</field>
         <field name="model_id" ref="model_setu_stock_inventory_count_line"/>
         <field name="groups" eval="[(4, ref('setu_inventory_count_management.group_setu_inventory_count_approver'))]"/>
-        <field name="domain_force">['|', ('inventory_count_id.approver_id', '=', False),
-            ('inventory_count_id.approver_id', '=', user.id)]
+        <field name="domain_force">['|', '|', ('inventory_count_id.approver_id', '=', False),
+            ('inventory_count_id.approver_id', '=', user.id), ('inventory_count_id.session_ids.user_ids', 'in', [user.id])]
         </field>
     </record>
     <record id="ir_rule_setu_stock_inventory_count_line_manager_scope" model="ir.rule">
@@ -115,8 +117,8 @@
         <field name="name">Inventory Count Session Line: approver scope</field>
         <field name="model_id" ref="model_setu_inventory_count_session_line"/>
         <field name="groups" eval="[(4, ref('setu_inventory_count_management.group_setu_inventory_count_approver'))]"/>
-        <field name="domain_force">['|', ('inventory_count_id.approver_id', '=', False),
-            ('inventory_count_id.approver_id', '=', user.id)]
+        <field name="domain_force">['|', '|', ('inventory_count_id.approver_id', '=', False),
+            ('inventory_count_id.approver_id', '=', user.id), ('session_id.user_ids', 'in', [user.id])]
         </field>
     </record>
     <record id="ir_rule_setu_inventory_count_session_line_manager_scope" model="ir.rule">

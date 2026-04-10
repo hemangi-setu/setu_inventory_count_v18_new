@@ -248,6 +248,7 @@ class SetuInventoryOperationDashboard(models.AbstractModel):
 
     def _get_operation_rejection_pct_by_location(self, sessions):
         """Rejected lines / scanned lines * 100 per location (session lines)."""
+        sessions = sessions.filtered(lambda s: s.state == 'Done')
         if not sessions:
             return {'labels': [], 'values': [], 'location_ids': []}
 
