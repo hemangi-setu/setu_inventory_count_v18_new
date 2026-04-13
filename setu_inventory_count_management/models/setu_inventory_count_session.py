@@ -108,30 +108,60 @@ class SetuInventoryCountSession(models.Model):
     # Type field removed - use is_multi_session instead to determine session behavior
     approver_id = fields.Many2one(related="inventory_count_id.approver_id", string="Approver", store=True)
 
+    @api.model
     def get_inventory_user_group(self):
-        inventory_user_group = self.env.ref(
+        return self.env.ref(
             'setu_inventory_count_management.group_setu_inventory_count_user',
             raise_if_not_found=False,
         )
-        return inventory_user_group
 
+    @api.model
     def _get_allowed_assignment_user_domain(self):
+        """Assignable users: Inventory Count User or Manager; exclude Approver-only."""
         inventory_user_group = self.get_inventory_user_group()
+        approver_group = self.env.ref(
+            'setu_inventory_count_management.group_setu_inventory_count_approver',
+            raise_if_not_found=False,
+        )
+        manager_group = self.env.ref(
+            'setu_inventory_count_management.group_setu_inventory_count_manager',
+            raise_if_not_found=False,
+        )
         domain = [('share', '=', False), ('company_ids', 'in', self.env.companies.ids)]
-        if inventory_user_group:
-            domain.append(('groups_id', 'in', [inventory_user_group.id]))
+        if not inventory_user_group:
+            return domain
+        domain.append(('groups_id', 'in', [inventory_user_group.id]))
+        if approver_group and manager_group:
+            domain.extend([
+                '|',
+                ('groups_id', 'not in', [approver_group.id]),
+                ('groups_id', 'in', [manager_group.id]),
+            ])
         return domain
+
+    @api.model
+    def _is_user_allowed_session_assignee(self, user):
+        """True for plain User or Manager; False for Approver-only (without Manager)."""
+        if not user or user.share:
+            return False
+        if not user.has_group('setu_inventory_count_management.group_setu_inventory_count_user'):
+            return False
+        if user.has_group('setu_inventory_count_management.group_setu_inventory_count_manager'):
+            return True
+        if user.has_group('setu_inventory_count_management.group_setu_inventory_count_approver'):
+            return False
+        return True
 
     @api.constrains('user_ids')
     def _check_assigned_users_are_inventory_users(self):
-        inventory_user_group = self.get_inventory_user_group()
-        if not inventory_user_group:
-            return
         for rec in self:
-            invalid_users = rec.user_ids.filtered(lambda user: inventory_user_group not in user.groups_id)
+            invalid_users = rec.user_ids.filtered(
+                lambda u: not self.env['setu.inventory.count.session']._is_user_allowed_session_assignee(u)
+            )
             if invalid_users:
                 raise ValidationError(_(
-                    "Only users with Inventory Count User rights can be assigned to sessions."
+                    "Only Inventory Count Users or Managers can be assigned to sessions "
+                    "(Approver-only users cannot be assigned)."
                 ))
 
     def _check_user_is_configured_approver(self):

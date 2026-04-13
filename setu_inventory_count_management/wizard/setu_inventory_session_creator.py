@@ -45,22 +45,18 @@ class SessionCreator(models.TransientModel):
     company_id = fields.Many2one(comodel_name="res.company", string="Company")
 
     def _get_allowed_assignment_user_domain(self):
-        inventory_user_group = self.env.ref(
-            'setu_inventory_count_management.group_setu_inventory_count_user',
-            raise_if_not_found=False,
-        )
-        domain = [('share', '=', False), ('company_ids', 'in', self.env.companies.ids)]
-        if inventory_user_group:
-            domain.append(('groups_id', 'in', [inventory_user_group.id]))
-        return domain
+        return self.env['setu.inventory.count.session']._get_allowed_assignment_user_domain()
 
     def _check_assigned_users_are_inventory_users(self):
-        invalid_users = [
-            u for u in self.user_ids
-            if not u.has_group('setu_inventory_count_management.group_setu_inventory_count_user')
-        ]
+        session_model = self.env['setu.inventory.count.session']
+        invalid_users = self.user_ids.filtered(
+            lambda u: not session_model._is_user_allowed_session_assignee(u)
+        )
         if invalid_users:
-            raise ValidationError(_("Only users with Inventory Count User rights can be assigned to sessions."))
+            raise ValidationError(_(
+                "Only Inventory Count Users or Managers can be assigned to sessions "
+                "(Approver-only users cannot be assigned)."
+            ))
 
     def _get_selected_products(self):
         self.ensure_one()
