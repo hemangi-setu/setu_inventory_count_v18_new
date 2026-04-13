@@ -33,62 +33,62 @@
         <record id="setu_rule_company_inventory_count" model="ir.rule">
             <field name="name">Inventory Count: active company</field>
             <field name="model_id" ref="setu_inventory_count_management.model_setu_stock_inventory_count"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', '=', company_id)]</field>
+             <field name="domain_force">[('warehouse_id.company_id', 'in', company_ids)]</field>
         </record>
         <record id="setu_rule_company_count_session" model="ir.rule">
             <field name="name">Inventory Count Session: active company</field>
             <field name="model_id" ref="setu_inventory_count_management.model_setu_inventory_count_session"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', '=', company_id)]</field>
+            <field name="domain_force">[('warehouse_id.company_id', 'in', company_ids + [False])]</field>
         </record>
         <record id="setu_rule_company_planner" model="ir.rule">
             <field name="name">Inventory Count Planner: active company</field>
             <field name="model_id" ref="setu_inventory_count_management.model_setu_stock_inventory_count_planner"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', '=', company_id)]</field>
+            <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
         </record>
         <record id="setu_rule_company_stock_inventory" model="ir.rule">
             <field name="name">Setu Stock Inventory (adjustment): active company</field>
             <field name="model_id" ref="setu_inventory_count_management.model_setu_stock_inventory"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', '=', company_id)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
         <record id="setu_rule_company_session_details" model="ir.rule">
             <field name="name">Inventory Session Details: active company</field>
             <field name="model_id" ref="setu_inventory_count_management.model_setu_inventory_session_details"/>
-            <field name="domain_force">['|', ('session_id.company_id', '=', False), ('session_id.company_id', '=', company_id)]</field>
+            <field name="domain_force">['|', ('session_id.company_id', '=', False), ('session_id.company_id', 'in', company_ids)]</field>
         </record>
         <record id="setu_rule_company_unscanned_lines" model="ir.rule">
             <field name="name">Unscanned Product Lines: active company</field>
             <field name="model_id" ref="setu_inventory_count_management.model_setu_unscanned_product_lines"/>
-            <field name="domain_force">['|', '|', '|', ('inventory_count_id.company_id', '=', False), ('inventory_count_id.company_id', '=', company_id), ('session_id.company_id', '=', False), ('session_id.company_id', '=', company_id)]</field>
+            <field name="domain_force">['|', '|', '|', ('inventory_count_id.company_id', '=', False), ('inventory_count_id.company_id', 'in', company_ids), ('session_id.company_id', '=', False), ('session_id.company_id', 'in', company_ids)]</field>
         </record>
         <record id="setu_rule_company_discrepancy_report" model="ir.rule">
             <field name="name">Inventory Discrepancy Report: active company</field>
             <field name="model_id" ref="setu_inventory_count_management.model_setu_inventory_discrepancy_report"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', '=', company_id)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
         <record id="setu_rule_company_session_user_report" model="ir.rule">
             <field name="name">Session User Report: active company</field>
             <field name="model_id" ref="setu_inventory_count_management.model_setu_inventory_session_user_report"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', '=', company_id)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
         <record id="setu_rule_company_count_wise_disc" model="ir.rule">
             <field name="name">Count-wise Discrepancy Report: active company</field>
             <field name="model_id" ref="setu_inventory_count_management.model_setu_count_wise_discrepancy_report"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', '=', company_id)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
         <record id="setu_rule_company_product_wise_disc" model="ir.rule">
             <field name="name">Product-wise Discrepancy Report: active company</field>
             <field name="model_id" ref="setu_inventory_count_management.model_setu_product_wise_discrepancy_report"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', '=', company_id)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
         <record id="setu_rule_company_location_wise_disc" model="ir.rule">
             <field name="name">Location-wise Discrepancy Report: active company</field>
             <field name="model_id" ref="setu_inventory_count_management.model_setu_location_wise_discrepancy_report"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', '=', company_id)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
         <record id="setu_rule_company_session_perf_report" model="ir.rule">
             <field name="name">Session Performance Report: active company</field>
             <field name="model_id" ref="setu_inventory_count_management.model_setu_inventory_session_performance_report"/>
-            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', '=', company_id)]</field>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
 
         <!-- Manager: full row access -->
